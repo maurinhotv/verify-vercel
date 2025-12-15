@@ -4,39 +4,42 @@ export default async function handler(req, res) {
   const { code } = req.body || {};
   if (!code || typeof code !== "string") return res.status(400).json({ error: "invalid_code" });
 
-  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!upstashUrl || !upstashToken) return res.status(500).json({ error: "missing_upstash_env" });
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return res.status(500).json({ error: "missing_supabase_env" });
 
-  const key = `verify:${code}`;
+  // Busca o registro e checa expiração
+  const getRes = await fetch(
+    `${url}/rest/v1/verification_codes?code=eq.${encodeURIComponent(code)}&select=code,verified,expires_at`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+  );
 
-  const getRes = await fetch(`${upstashUrl}/get/${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${upstashToken}` }
-  });
+  if (!getRes.ok) return res.status(502).json({ error: "supabase_get_failed" });
 
-  if (!getRes.ok) return res.status(502).json({ error: "upstash_get_failed" });
+  const rows = await getRes.json().catch(() => []);
+  const row = rows?.[0];
+  if (!row) return res.status(404).json({ error: "not_found_or_expired" });
 
-  const getJson = await getRes.json();
-  const raw = getJson?.result;
-  if (!raw) return res.status(404).json({ error: "not_found_or_expired" });
+  if (new Date(row.expires_at).getTime() <= Date.now()) {
+    return res.status(404).json({ error: "not_found_or_expired" });
+  }
 
-  let data;
-  try { data = JSON.parse(raw); } catch { return res.status(500).json({ error: "bad_payload" }); }
+  // Marca como verificado
+  const patchRes = await fetch(
+    `${url}/rest/v1/verification_codes?code=eq.${encodeURIComponent(code)}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ verified: true })
+    }
+  );
 
-  data.verified = true;
-
-  // Mantém o TTL atual: pega TTL e re-seta
-  const ttlRes = await fetch(`${upstashUrl}/ttl/${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${upstashToken}` }
-  });
-  const ttlJson = await ttlRes.json();
-  const ttl = Math.max(Number(ttlJson?.result || 60), 1);
-
-  const setRes = await fetch(`${upstashUrl}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(data))}?EX=${ttl}`, {
-    headers: { Authorization: `Bearer ${upstashToken}` }
-  });
-
-  if (!setRes.ok) return res.status(502).json({ error: "upstash_set_failed" });
+  if (!patchRes.ok) return res.status(502).json({ error: "supabase_update_failed" });
 
   return res.json({ ok: true, verified: true });
 }
