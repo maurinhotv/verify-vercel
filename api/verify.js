@@ -8,9 +8,9 @@ export default async function handler(req, res) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return res.status(500).json({ error: "missing_supabase_env" });
 
-  // Busca o registro e checa expiração
+  // Busca registro do código (agora também pega serial)
   const getRes = await fetch(
-    `${url}/rest/v1/verification_codes?code=eq.${encodeURIComponent(code)}&select=code,verified,expires_at`,
+    `${url}/rest/v1/verification_codes?code=eq.${encodeURIComponent(code)}&select=code,verified,expires_at,serial`,
     { headers: { apikey: key, Authorization: `Bearer ${key}` } }
   );
 
@@ -41,5 +41,26 @@ export default async function handler(req, res) {
 
   if (!patchRes.ok) return res.status(502).json({ error: "supabase_update_failed" });
 
-  return res.json({ ok: true, verified: true });
+  // ✅ Salva serial como confiável (nunca mais pede verificação nesse PC)
+  const serial = String(row.serial || "").trim();
+  if (serial) {
+    const insertTrusted = await fetch(`${url}/rest/v1/trusted_serials`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates"
+      },
+      body: JSON.stringify([{ serial }])
+    });
+
+    // Se falhar aqui, não bloqueia o verify (só não marca como trusted)
+    if (!insertTrusted.ok) {
+      const t = await insertTrusted.text().catch(() => "");
+      return res.json({ ok: true, verified: true, trustedSaved: false, details: t });
+    }
+  }
+
+  return res.json({ ok: true, verified: true, trustedSaved: true });
 }
