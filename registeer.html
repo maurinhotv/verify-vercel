@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>Criar Conta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+
+<div class="w-full max-w-sm bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+  <h1 class="text-xl font-bold text-center">Criar Conta</h1>
+
+  <input id="user" placeholder="Usuário"
+    class="mt-4 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded">
+
+  <input id="pass" type="password" placeholder="Senha (mín. 6)"
+    class="mt-3 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded">
+
+  <button id="btn"
+    class="mt-4 w-full bg-white/10 hover:bg-white/20 py-2 rounded">
+    Criar conta
+  </button>
+
+  <p id="msg" class="mt-3 text-sm text-center"></p>
+</div>
+
+<script>
+document.getElementById("btn").onclick = async () => {
+  const username = document.getElementById("user").value;
+  const password = document.getElementById("pass").value;
+  const msg = document.getElementById("msg");
+
+  const r = await fetch("/api/registerUser", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await r.json();
+
+  if (data.ok) {
+    msg.textContent = "Conta criada! Volte ao jogo e faça login.";
+    msg.className = "text-emerald-400 text-center mt-3";
+  } else {
+    msg.textContent = data.msg;
+    msg.className = "text-red-400 text-center mt-3";
+  }
+};
+</script>
+
+</body>
+</html>
