@@ -26,27 +26,33 @@
 
 <script>
 document.getElementById("btn").onclick = async () => {
-  const username = document.getElementById("user").value;
-  const password = document.getElementById("pass").value;
   const msg = document.getElementById("msg");
+  msg.textContent = "Botão clicado...";
 
-  const r = await fetch("/api/registerUser", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
+  try {
+    const r = await fetch("/api/registerUser", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "teste123",
+        password: "123456"
+      })
+    });
 
-  const data = await r.json();
+    msg.textContent = "HTTP Status: " + r.status;
 
-  if (data.ok) {
-    msg.textContent = "Conta criada! Volte ao jogo e faça login.";
-    msg.className = "text-emerald-400 text-center mt-3";
-  } else {
-    msg.textContent = data.msg;
-    msg.className = "text-red-400 text-center mt-3";
+    const text = await r.text();
+    console.log("Resposta do servidor:", text);
+
+    msg.textContent += " | Resposta: " + text;
+
+  } catch (err) {
+    console.error(err);
+    msg.textContent = "ERRO JS: " + err.message;
   }
 };
 </script>
+
 
 </body>
 </html>
