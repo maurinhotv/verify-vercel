@@ -3,59 +3,84 @@
 <head>
   <meta charset="utf-8">
   <title>Criar Conta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
 
-<div class="w-full max-w-sm bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-  <h1 class="text-xl font-bold text-center">Criar Conta</h1>
+  <div class="w-full max-w-sm bg-zinc-900 p-6 rounded-xl border border-zinc-800 shadow-lg">
+    <h1 class="text-xl font-bold text-center">Criar Conta</h1>
 
-  <input id="user" placeholder="Usuário"
-    class="mt-4 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded">
+    <input
+      id="user"
+      type="text"
+      placeholder="Usuário"
+      class="mt-4 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-zinc-700"
+    />
 
-  <input id="pass" type="password" placeholder="Senha (mín. 6)"
-    class="mt-3 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded">
+    <input
+      id="pass"
+      type="password"
+      placeholder="Senha (mín. 6 caracteres)"
+      class="mt-3 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-zinc-700"
+    />
 
-  <button id="btn"
-    class="mt-4 w-full bg-white/10 hover:bg-white/20 py-2 rounded">
-    Criar conta
-  </button>
+    <button
+      id="btn"
+      class="mt-4 w-full bg-white/10 hover:bg-white/20 transition py-2 rounded font-medium"
+    >
+      Criar conta
+    </button>
 
-  <p id="msg" class="mt-3 text-sm text-center"></p>
-</div>
+    <p id="msg" class="mt-3 text-sm text-center"></p>
+  </div>
 
-<script>
-document.getElementById("btn").onclick = async () => {
-  const username = document.getElementById("user").value;
-  const password = document.getElementById("pass").value;
-  const msg = document.getElementById("msg");
+  <script>
+    document.getElementById("btn").addEventListener("click", async () => {
+      const username = document.getElementById("user").value.trim();
+      const password = document.getElementById("pass").value;
+      const msg = document.getElementById("msg");
 
-  msg.textContent = "Criando conta...";
+      if (!username || !password) {
+        msg.textContent = "Preencha usuário e senha.";
+        msg.className = "mt-3 text-sm text-red-400 text-center";
+        return;
+      }
 
-  try {
-    const r = await fetch("/api/registerUser", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      if (password.length < 6) {
+        msg.textContent = "A senha deve ter no mínimo 6 caracteres.";
+        msg.className = "mt-3 text-sm text-red-400 text-center";
+        return;
+      }
+
+      msg.textContent = "Criando conta...";
+      msg.className = "mt-3 text-sm text-zinc-300 text-center";
+
+      try {
+        const r = await fetch("/api/registerUser", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await r.json();
+
+        if (r.ok && data.ok) {
+          msg.textContent = "Conta criada com sucesso! Volte ao jogo e faça login.";
+          msg.className = "mt-3 text-sm text-emerald-400 text-center";
+        } else {
+          msg.textContent = data.msg || "Erro ao criar conta.";
+          msg.className = "mt-3 text-sm text-red-400 text-center";
+        }
+      } catch (err) {
+        msg.textContent = "Erro de conexão com o servidor.";
+        msg.className = "mt-3 text-sm text-red-400 text-center";
+      }
     });
-
-    const data = await r.json();
-
-    if (r.ok && data.ok) {
-      msg.textContent = "Conta criada! Volte ao jogo e faça login.";
-      msg.className = "text-emerald-400 text-center mt-3";
-    } else {
-      msg.textContent = data.msg || "Erro ao criar conta.";
-      msg.className = "text-red-400 text-center mt-3";
-    }
-  } catch (err) {
-    msg.textContent = "Erro de conexão com o servidor.";
-    msg.className = "text-red-400 text-center mt-3";
-  }
-};
-</script>
-
-
+  </script>
 
 </body>
 </html>
