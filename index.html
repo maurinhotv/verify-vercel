@@ -2,56 +2,755 @@
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Verificação de Acesso</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Home - Seu Servidor</title>
 
-  <!-- Tailwind via CDN (simples, sem build) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bg:#070a07;
+      --card: rgba(0,0,0,.55);
+      --stroke: rgba(255,255,255,.08);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.72);
+      --green: #b7ff1a;
+      --green2:#a7ff00;
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --radius: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--font);
+      color:var(--text);
+      background: var(--bg);
+      overflow-x:hidden;
+    }
+
+    /* ===== HERO BACKGROUND ===== */
+    .hero{
+      min-height:100vh;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .hero__bg{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(1200px 600px at 75% 35%, rgba(183,255,26,.22), transparent 65%),
+        radial-gradient(900px 500px at 20% 70%, rgba(0,0,0,.55), transparent 60%),
+        linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.65)),
+        url("https://metropole.gg/hero-background.webp");
+      background-size: cover;
+      background-position:center;
+      filter:saturate(1.1) contrast(1.05);
+    }
+
+    /* Overlay com leve vinheta */
+    .hero__overlay{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(1200px 700px at 50% 60%, rgba(0,0,0,.35), rgba(0,0,0,.75)),
+        linear-gradient(90deg, rgba(0,0,0,.35), rgba(0,0,0,.10), rgba(0,0,0,.35));
+      pointer-events:none;
+    }
+
+    /* "Hex lines" estilo do print */
+    .hero__hex{
+      position:absolute; inset:-120px;
+      opacity:.25;
+      pointer-events:none;
+      background-image:
+        linear-gradient(120deg, rgba(255,255,255,.18) 2px, transparent 2px),
+        linear-gradient(60deg, rgba(255,255,255,.12) 2px, transparent 2px);
+      background-size: 380px 380px;
+      transform: rotate(-8deg);
+      mix-blend-mode: overlay;
+      mask-image: radial-gradient(circle at 55% 40%, rgba(0,0,0,1), rgba(0,0,0,.1) 62%, rgba(0,0,0,0) 78%);
+    }
+
+    /* ===== NAVBAR ===== */
+    .nav{
+      position:relative;
+      z-index:5;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 26px 54px;
+      gap:18px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      user-select:none;
+    }
+    .brand__mark{
+      width:34px;height:34px;
+      background: linear-gradient(135deg, var(--green), #7cff00);
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(183,255,26,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    .brand__mark:before{
+      content:"";
+      position:absolute; inset:-18px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 55%);
+      transform: rotate(18deg);
+    }
+    .brand__name{
+      font-weight:800;
+      letter-spacing:.3px;
+      font-size: 22px;
+      text-transform: lowercase;
+    }
+
+    .navlinks{
+      display:flex;
+      align-items:center;
+      gap:26px;
+      font-weight:600;
+      font-size: 14px;
+      color: rgba(255,255,255,.80);
+    }
+    .navlinks a{
+      color:inherit;
+      text-decoration:none;
+      padding:10px 6px;
+      border-radius: 10px;
+      transition:.15s ease;
+    }
+    .navlinks a:hover{
+      color:#fff;
+      background: rgba(255,255,255,.06);
+    }
+
+    .navright{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 260px;
+      justify-content:flex-end;
+    }
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-weight:800;
+      letter-spacing:.2px;
+      transition:.15s ease;
+      color:#0b0f06;
+      background: var(--green);
+      box-shadow: 0 14px 34px rgba(183,255,26,.18);
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+    .btn:active{ transform: translateY(0px); }
+
+    .btn--ghost{
+      background: rgba(0,0,0,.35);
+      color: rgba(255,255,255,.9);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow:none;
+    }
+    .btn--ghost:hover{ background: rgba(0,0,0,.45); }
+
+    /* Barra logado (igual print 2) */
+    .userbar{
+      display:none;
+      align-items:center;
+      gap:12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(183,255,26,.22);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .userbar__panel{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border-radius: 10px;
+      padding: 8px 12px;
+      border: 1px solid rgba(183,255,26,.35);
+      background: rgba(0,0,0,.35);
+      color: rgba(183,255,26,.95);
+      font-weight:900;
+      font-size:12px;
+      text-transform: uppercase;
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .userbar__panel:hover{ filter: brightness(1.05); }
+
+    .userbar__diamond{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color: rgba(255,255,255,.85);
+      font-weight:800;
+      font-size: 13px;
+      padding: 0 6px;
+      white-space:nowrap;
+    }
+    .diamond{
+      width:16px; height:16px;
+      background: conic-gradient(from 180deg, var(--green), #fff, var(--green));
+      clip-path: polygon(50% 0%, 90% 30%, 50% 100%, 10% 30%);
+      opacity:.95;
+      filter: drop-shadow(0 6px 18px rgba(183,255,26,.18));
+    }
+
+    .userbar__user{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color: rgba(255,255,255,.9);
+      font-weight:800;
+      font-size: 13px;
+      white-space:nowrap;
+    }
+    .avatar{
+      width:22px; height:22px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .userid{
+      color: rgba(255,255,255,.65);
+      font-weight:700;
+      font-size: 12px;
+    }
+
+    /* ===== CENTER CONTENT ===== */
+    .content{
+      position:relative;
+      z-index:4;
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 0 24px 80px;
+      text-align:center;
+    }
+
+    .center{
+      max-width: 840px;
+      width:100%;
+      margin-top: 20px;
+    }
+
+    .logoBig{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      margin-bottom: 8px;
+    }
+    .logoBig__mark{
+      width:86px;height:86px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--green), #7cff00);
+      box-shadow: 0 18px 60px rgba(183,255,26,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    .logoBig__mark:before{
+      content:"";
+      position:absolute; inset:-30px;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 60%);
+      transform: rotate(18deg);
+    }
+    .logoBig__title{
+      font-size: 86px;
+      font-weight: 1000;
+      letter-spacing:-1.5px;
+      line-height:1;
+      text-transform: lowercase;
+      text-shadow: 0 18px 55px rgba(0,0,0,.55);
+    }
+
+    .subtitle{
+      margin-top: 10px;
+      font-size: 28px;
+      color: rgba(255,255,255,.85);
+      font-weight:700;
+      text-shadow: 0 12px 40px rgba(0,0,0,.55);
+    }
+
+    .playWrap{
+      margin-top: 26px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:12px;
+    }
+
+    .playBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 14px 22px;
+      border-radius: 12px;
+      border: 0;
+      cursor:pointer;
+      background: var(--green);
+      color:#0b0f06;
+      font-weight: 1000;
+      letter-spacing: .6px;
+      box-shadow: 0 18px 55px rgba(183,255,26,.22);
+      text-transform: uppercase;
+      font-size: 18px;
+      transition: .15s ease;
+    }
+    .playBtn:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+    .playBtn:active{ transform: translateY(0); }
+    .playBtn .arrow{ opacity:.9; font-weight: 1000; }
+
+    .icons{
+      margin-top: 18px;
+      display:flex;
+      justify-content:center;
+      gap:18px;
+      opacity:.92;
+    }
+    .icons a{
+      width:34px; height:34px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.9);
+      text-decoration:none;
+      transition:.15s ease;
+    }
+    .icons a:hover{ background: rgba(0,0,0,.5); transform: translateY(-1px); }
+
+    /* ===== MODAL ===== */
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+      padding: 20px;
+    }
+    .modal__backdrop{
+      position:absolute; inset:0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+    }
+    .modal__card{
+      position:relative;
+      width: 100%;
+      max-width: 420px;
+      border-radius: 16px;
+      background: rgba(10,12,10,.92);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modal__top{
+      padding: 16px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .modal__title{
+      font-weight: 1000;
+      letter-spacing:.2px;
+    }
+    .x{
+      width:34px;height:34px;
+      display:grid; place-items:center;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor:pointer;
+      color: rgba(255,255,255,.85);
+    }
+    .x:hover{ background: rgba(255,255,255,.08); }
+
+    .modal__body{
+      padding: 18px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom: 12px;
+    }
+    .label{
+      color: rgba(255,255,255,.8);
+      font-weight:800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing:.4px;
+    }
+    .input{
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.35);
+      color: rgba(255,255,255,.92);
+      outline:none;
+    }
+    .input:focus{
+      border-color: rgba(183,255,26,.35);
+      box-shadow: 0 0 0 4px rgba(183,255,26,.10);
+    }
+    .help{
+      font-size: 12px;
+      color: rgba(255,255,255,.62);
+      margin-top: -2px;
+      margin-bottom: 10px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      margin-top: 14px;
+    }
+    .row .btn{ flex:1; border-radius: 12px; padding: 12px 14px; }
+    .msg{
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight:700;
+      color: rgba(255,255,255,.82);
+      min-height: 18px;
+    }
+    .msg.ok{ color: rgba(183,255,26,.95); }
+    .msg.err{ color: #ff6b6b; }
+
+    /* ===== RESPONSIVO ===== */
+    @media (max-width: 980px){
+      .nav{ padding: 20px 18px; }
+      .navlinks{ display:none; }
+      .logoBig__title{ font-size: 56px; }
+      .logoBig__mark{ width:68px; height:68px; border-radius: 18px; }
+      .subtitle{ font-size: 20px; }
+      .navright{ min-width:unset; }
+    }
+  </style>
 </head>
 
-<body class="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-4">
+<body>
+  <section class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__overlay"></div>
+    <div class="hero__hex"></div>
 
-  <main class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 shadow-xl">
-    
-    <h1 class="text-2xl font-bold text-center">
-      Verificação de acesso
-    </h1>
+    <!-- NAV -->
+    <header class="nav">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true"></div>
+        <div class="brand__name" id="brandName">metrópole</div>
+      </div>
 
-    <p class="mt-3 text-sm text-zinc-300 text-center">
-      Digite o código que apareceu no seu jogo e clique em <b>Verificar</b>.
-    </p>
+      <nav class="navlinks">
+        <a href="#" data-link="cidades">Nossas Cidades</a>
+        <a href="#" data-link="noticias">Notícias</a>
+        <a href="#" data-link="diamantes">Diamantes</a>
+        <a href="#" data-link="anticheat">Anticheat</a>
+      </nav>
 
-    <div class="mt-6">
-      <label class="block text-sm text-zinc-300 mb-2">
-        Código
-      </label>
+      <div class="navright">
+        <!-- DESLOGADO -->
+        <button class="btn btn--ghost" id="btnRegister">CRIAR CONTA</button>
+        <button class="btn" id="btnLogin">ENTRAR</button>
 
-      <input
-        id="code"
-        maxlength="16"
-        placeholder="EX: A9KX2Q7P"
-        class="w-full rounded-lg bg-zinc-950/70 border border-zinc-800 px-4 py-3
-               text-lg tracking-widest uppercase outline-none
-               focus:border-zinc-600"
-      />
+        <!-- LOGADO -->
+        <div class="userbar" id="userbar">
+          <div class="userbar__panel" id="btnPanel">
+            ACESSAR PAINEL <span style="opacity:.9">›</span>
+          </div>
+          <div class="userbar__diamond" title="Diamantes">
+            <span class="diamond" aria-hidden="true"></span>
+            <span id="diamonds">0</span>
+          </div>
+          <div class="userbar__user">
+            <span class="avatar" aria-hidden="true"></span>
+            <span id="usernameTop">usuario</span>
+            <span class="userid" id="useridTop">#0</span>
+          </div>
+          <button class="btn btn--ghost" id="btnLogout" style="padding:10px 12px;">SAIR</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CENTER -->
+    <main class="content">
+      <div class="center">
+        <div class="logoBig">
+          <div class="logoBig__mark" aria-hidden="true"></div>
+          <div class="logoBig__title" id="heroTitle">metrópole</div>
+        </div>
+
+        <div class="subtitle" id="heroSubtitle">Sua vida nova começa aqui.</div>
+
+        <div class="playWrap">
+          <button class="playBtn" id="btnPlay">
+            🎮 JOGAR AGORA <span class="arrow">›</span>
+          </button>
+        </div>
+
+        <div class="icons">
+          <a href="#" title="Instagram" aria-label="Instagram">⌁</a>
+          <a href="#" title="YouTube" aria-label="YouTube">▶</a>
+          <a href="#" title="X" aria-label="X">𝕏</a>
+          <a href="#" title="Discord" aria-label="Discord">☰</a>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal" id="modalLogin" aria-hidden="true">
+    <div class="modal__backdrop" data-close="1"></div>
+    <div class="modal__card">
+      <div class="modal__top">
+        <div class="modal__title">Entrar</div>
+        <button class="x" data-close="1">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <div class="label">Usuário</div>
+          <input class="input" id="loginUser" autocomplete="username" placeholder="Seu usuário" />
+        </div>
+        <div class="field">
+          <div class="label">Senha</div>
+          <input class="input" id="loginPass" type="password" autocomplete="current-password" placeholder="Sua senha" />
+        </div>
+
+        <div class="row">
+          <button class="btn btn--ghost" id="loginToRegister">Criar conta</button>
+          <button class="btn" id="doLogin">Entrar</button>
+        </div>
+
+        <div class="msg" id="loginMsg"></div>
+      </div>
     </div>
+  </div>
 
-    <button
-      id="btn"
-      class="mt-4 w-full rounded-lg bg-white/10 hover:bg-white/15
-             border border-white/10 px-4 py-3 font-semibold transition"
-    >
-      Verificar
-    </button>
+  <!-- MODAL REGISTER -->
+  <div class="modal" id="modalRegister" aria-hidden="true">
+    <div class="modal__backdrop" data-close="1"></div>
+    <div class="modal__card">
+      <div class="modal__top">
+        <div class="modal__title">Criar conta</div>
+        <button class="x" data-close="1">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="field">
+          <div class="label">Usuário</div>
+          <input class="input" id="regUser" autocomplete="username" placeholder="Escolha um usuário" />
+          <div class="help">Mínimo 3 caracteres.</div>
+        </div>
 
-    <p id="msg" class="mt-4 text-sm text-zinc-300 text-center"></p>
+        <div class="field">
+          <div class="label">Senha</div>
+          <input class="input" id="regPass" type="password" autocomplete="new-password" placeholder="Crie uma senha" />
+          <div class="help">Mínimo 6 caracteres.</div>
+        </div>
 
-    <p class="mt-6 text-xs text-zinc-500 text-center">
-      Após verificar, volte ao jogo e clique em <b>“Já verifiquei”</b>.
-    </p>
+        <div class="row">
+          <button class="btn btn--ghost" id="registerToLogin">Já tenho conta</button>
+          <button class="btn" id="doRegister">Criar</button>
+        </div>
 
-  </main>
+        <div class="msg" id="regMsg"></div>
+      </div>
+    </div>
+  </div>
 
-  <script src="./app.js"></script>
+  <script>
+    // ====== CONFIG RÁPIDA ======
+    // Troque aqui para personalizar nome, links e imagem:
+    const CONFIG = {
+      serverName: "metrópole",
+      playUrl: "mtasa://SEU_IP:SEU_PORTA",  // ou link do discord/launcher
+      panelUrl: "/painel.html",            // você pode criar depois
+      diamondsDefault: 0
+    };
+
+    // ====== STATE/Sessão simples ======
+    const LS_KEY = "site_session_v1";
+
+    function getSession(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEY) || "null"); }catch{ return null; }
+    }
+    function setSession(s){
+      localStorage.setItem(LS_KEY, JSON.stringify(s));
+      applyAuthUI();
+    }
+    function clearSession(){
+      localStorage.removeItem(LS_KEY);
+      applyAuthUI();
+    }
+
+    function applyAuthUI(){
+      const s = getSession();
+
+      const btnLogin = document.getElementById("btnLogin");
+      const btnRegister = document.getElementById("btnRegister");
+      const userbar = document.getElementById("userbar");
+
+      if(s && s.ok){
+        btnLogin.style.display = "none";
+        btnRegister.style.display = "none";
+        userbar.style.display = "flex";
+
+        document.getElementById("usernameTop").textContent = s.username || "usuario";
+        document.getElementById("useridTop").textContent = "#" + (s.user_id ?? "0");
+        document.getElementById("diamonds").textContent = String(s.diamonds ?? CONFIG.diamondsDefault);
+      } else {
+        btnLogin.style.display = "inline-flex";
+        btnRegister.style.display = "inline-flex";
+        userbar.style.display = "none";
+      }
+    }
+
+    // ====== UI helpers ======
+    function openModal(el){ el.style.display = "flex"; el.setAttribute("aria-hidden","false"); }
+    function closeModal(el){ el.style.display = "none"; el.setAttribute("aria-hidden","true"); }
+    function setMsg(el, text, type){
+      el.textContent = text || "";
+      el.className = "msg" + (type ? " " + type : "");
+    }
+
+    async function postJSON(url, payload){
+      const r = await fetch(url, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload || {})
+      });
+      const data = await r.json().catch(()=> ({}));
+      return { ok: r.ok, status: r.status, data };
+    }
+
+    // ====== Eventos ======
+    // Top config text
+    document.getElementById("brandName").textContent = CONFIG.serverName;
+    document.getElementById("heroTitle").textContent = CONFIG.serverName;
+
+    // Play button
+    document.getElementById("btnPlay").addEventListener("click", () => {
+      window.location.href = CONFIG.playUrl;
+    });
+
+    // Panel button
+    document.getElementById("btnPanel").addEventListener("click", () => {
+      window.location.href = CONFIG.panelUrl;
+    });
+
+    // Logout
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      clearSession();
+    });
+
+    // Open modals
+    const modalLogin = document.getElementById("modalLogin");
+    const modalRegister = document.getElementById("modalRegister");
+
+    document.getElementById("btnLogin").addEventListener("click", () => openModal(modalLogin));
+    document.getElementById("btnRegister").addEventListener("click", () => openModal(modalRegister));
+
+    // Close modals on backdrop / X
+    document.querySelectorAll("[data-close]").forEach(el => {
+      el.addEventListener("click", (e) => {
+        if(modalLogin.style.display === "flex") closeModal(modalLogin);
+        if(modalRegister.style.display === "flex") closeModal(modalRegister);
+      });
+    });
+
+    // Switch modals
+    document.getElementById("loginToRegister").addEventListener("click", () => {
+      closeModal(modalLogin);
+      openModal(modalRegister);
+    });
+    document.getElementById("registerToLogin").addEventListener("click", () => {
+      closeModal(modalRegister);
+      openModal(modalLogin);
+    });
+
+    // Register
+    document.getElementById("doRegister").addEventListener("click", async () => {
+      const u = document.getElementById("regUser").value.trim();
+      const p = document.getElementById("regPass").value;
+      const msg = document.getElementById("regMsg");
+
+      if(u.length < 3) return setMsg(msg, "Usuário muito curto (mínimo 3).", "err");
+      if(p.length < 6) return setMsg(msg, "Senha muito curta (mínimo 6).", "err");
+
+      setMsg(msg, "Criando conta...", "");
+      const res = await postJSON("/api/registerUser", { username: u, password: p });
+
+      if(res.ok && res.data.ok){
+        setMsg(msg, "Conta criada! Agora faça login.", "ok");
+        setTimeout(() => {
+          closeModal(modalRegister);
+          openModal(modalLogin);
+          document.getElementById("loginUser").value = u;
+          document.getElementById("loginPass").value = "";
+          setMsg(document.getElementById("loginMsg"), "", "");
+        }, 700);
+      } else {
+        setMsg(msg, res.data.msg || "Erro ao criar conta.", "err");
+      }
+    });
+
+    // Login
+    document.getElementById("doLogin").addEventListener("click", async () => {
+      const u = document.getElementById("loginUser").value.trim();
+      const p = document.getElementById("loginPass").value;
+      const msg = document.getElementById("loginMsg");
+
+      if(!u || !p) return setMsg(msg, "Preencha usuário e senha.", "err");
+
+      setMsg(msg, "Entrando...", "");
+      const res = await postJSON("/api/login", { username: u, password: p });
+
+      if(res.ok && res.data.ok){
+        // salva sessão simples
+        setSession({
+          ok: true,
+          username: res.data.username || u,
+          user_id: res.data.user_id,
+          vip: res.data.vip || "none",
+          diamonds: CONFIG.diamondsDefault
+        });
+
+        setMsg(msg, "Logado! ✅", "ok");
+        setTimeout(() => closeModal(modalLogin), 500);
+      } else {
+        setMsg(msg, "Usuário ou senha inválidos.", "err");
+      }
+    });
+
+    // Enter = login dentro do modal
+    ["loginUser","loginPass"].forEach(id=>{
+      document.getElementById(id).addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") document.getElementById("doLogin").click();
+      });
+    });
+    ["regUser","regPass"].forEach(id=>{
+      document.getElementById(id).addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") document.getElementById("doRegister").click();
+      });
+    });
+
+    // Init
+    applyAuthUI();
+  </script>
 </body>
 </html>
