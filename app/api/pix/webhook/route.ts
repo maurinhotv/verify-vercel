@@ -1,147 +1,160 @@
-import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import crypto from "crypto";
+// app/api/pix/webhook/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// (opcional) segredo de webhook se você quiser validar assinatura depois
-// const WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!;
 
-async function fetchPayment(paymentId: string) {
-  const accessToken = process.env.MP_ACCESS_TOKEN!;
+const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE, {
+  auth: { persistSession: false },
+});
+
+type MpPayment = {
+  id: number;
+  status: string; // approved, pending, rejected...
+  external_reference?: string; // vamos usar como orderId
+  transaction_amount?: number;
+};
+
+async function fetchMpPayment(paymentId: string): Promise<MpPayment> {
   const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    cache: "no-store",
   });
-  if (!r.ok) return null;
-  return r.json();
+
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`MP GET payment failed: ${r.status} ${txt}`);
+  }
+
+  return (await r.json()) as MpPayment;
 }
 
-export async function POST(req: Request) {
+function isPaid(status: string) {
+  return status === "approved";
+}
+
+export async function POST(req: NextRequest) {
   try {
-    // Mercado Pago manda JSON em alguns casos, e em outros manda querystring.
-    // Vamos aceitar ambos.
-    const url = new URL(req.url);
-    const qPaymentId = url.searchParams.get("id");
-    const qTopic = url.searchParams.get("topic") || url.searchParams.get("type");
-
-    const body = await req.json().catch(() => null);
-
-    let paymentId: string | null = null;
-
-    // Formato comum: { type: "payment", data: { id: "123" } }
-    if (body?.type === "payment" && body?.data?.id) {
-      paymentId = String(body.data.id);
+    if (!SUPABASE_URL || !SERVICE_ROLE) {
+      return NextResponse.json({ error: "Supabase env missing" }, { status: 500 });
+    }
+    if (!MP_ACCESS_TOKEN) {
+      return NextResponse.json({ error: "MP_ACCESS_TOKEN missing" }, { status: 500 });
     }
 
-    // Alguns formatos: { action, api_version, data: { id } }
-    if (!paymentId && body?.data?.id) {
-      paymentId = String(body.data.id);
+    // Mercado Pago normalmente manda id pelo querystring:
+    // /api/pix/webhook?id=123&topic=payment
+    // (às vezes vem no body também)
+    const { searchParams } = new URL(req.url);
+    const qsId = searchParams.get("id") || searchParams.get("data.id");
+
+    let body: any = null;
+    try {
+      body = await req.json();
+    } catch {
+      // sem body, ok
     }
 
-    // Fallback via query
-    if (!paymentId && qPaymentId && (qTopic === "payment" || qTopic === "payments")) {
-      paymentId = String(qPaymentId);
+    const bodyId = body?.data?.id ?? body?.id;
+    const paymentId = String(qsId ?? bodyId ?? "");
+
+    if (!paymentId || paymentId === "undefined" || paymentId === "null") {
+      // Se não veio ID, não tem como processar.
+      return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
     }
 
-    // Se não for evento de pagamento, só responde OK
-    if (!paymentId) {
-      return NextResponse.json({ ok: true });
+    // 1) Busca detalhes do pagamento no MP (fonte da verdade)
+    const payment = await fetchMpPayment(paymentId);
+
+    // 2) Só processa quando realmente estiver pago
+    if (!isPaid(payment.status)) {
+      return NextResponse.json({ ok: true, status: payment.status }, { status: 200 });
     }
 
-    // 1) Confirma no MP server-to-server
-    const pay = await fetchPayment(paymentId);
-    if (!pay) return NextResponse.json({ ok: true });
+    const orderId = payment.external_reference;
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "payment.external_reference missing" },
+        { status: 400 }
+      );
+    }
 
-    // Precisa estar aprovado
-    if (pay.status !== "approved") return NextResponse.json({ ok: true });
-
-    // Seu orderId vem do external_reference (definido no create)
-    const orderId = String(pay.external_reference || "");
-    if (!orderId) return NextResponse.json({ ok: true });
-
-    // 2) Busca pedido no Supabase
+    // 3) Carrega pedido
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("pix_orders")
-      .select("id, status, user_id, package_id, mta_account, gateway_id")
+      .select("id, user_id, package_id, status, delivered_at")
       .eq("id", orderId)
       .single();
 
-    if (orderErr || !order) return NextResponse.json({ ok: true });
+    if (orderErr || !order) {
+      return NextResponse.json({ error: "order not found" }, { status: 404 });
+    }
 
-    // Idempotência: se já entregou, não faz nada
-    if (order.status === "delivered") return NextResponse.json({ ok: true });
+    // 4) TRAVA anti-duplicação: se já entregou, não faz nada
+    if (order.delivered_at || order.status === "delivered") {
+      return NextResponse.json({ ok: true, alreadyDelivered: true }, { status: 200 });
+    }
 
-    // 3) Valida valor contra o pacote (anti-fraude)
-    const { data: pkg } = await supabaseAdmin
+    // 5) Busca pacote (quantidade de diamantes)
+    const { data: pkg, error: pkgErr } = await supabaseAdmin
       .from("diamond_packages")
-      .select("id, diamonds, price_cents")
+      .select("id, diamonds")
       .eq("id", order.package_id)
       .single();
 
-    if (!pkg) return NextResponse.json({ ok: true });
-
-    const expected = Number(pkg.price_cents) / 100;
-    const amount = Number(pay.transaction_amount || 0);
-
-    if (amount !== expected) {
-      // valor não bate → não entrega
-      return NextResponse.json({ ok: true });
+    if (pkgErr || !pkg) {
+      return NextResponse.json({ error: "package not found" }, { status: 400 });
     }
 
-    // 4) Marca pago (se ainda não estiver)
-    if (order.status !== "paid") {
-      await supabaseAdmin
-        .from("pix_orders")
-        .update({
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          gateway_id: String(paymentId), // salva paymentId real também
-        })
-        .eq("id", order.id);
-    }
+    // 6) Marca como entregue de forma CONDICIONAL (só se delivered_at ainda for null)
+    // Isso garante que mesmo com 2 webhooks simultâneos, só 1 vai “ganhar”.
+    const nowIso = new Date().toISOString();
 
-    // 5) Credita diamantes no site (espelho)
-    //    Isso permite o Header mostrar saldo.
-    //    (Você ainda vai entregar no MTA depois via API secreta)
-    const diamondsToAdd = Number(pkg.diamonds);
-
-    // increment atômico
-    const { error: incErr } = await supabaseAdmin.rpc("increment_user_diamonds", {
-      p_user_id: order.user_id,
-      p_amount: diamondsToAdd,
-    });
-
-    // Se você ainda não criou a RPC, cai pro update simples:
-    if (incErr) {
-      // fallback (menos ideal que RPC, mas funciona)
-      const { data: u } = await supabaseAdmin
-        .from("users")
-        .select("diamonds")
-        .eq("id", order.user_id)
-        .single();
-
-      const current = Number(u?.diamonds ?? 0);
-      await supabaseAdmin
-        .from("users")
-        .update({ diamonds: current + diamondsToAdd })
-        .eq("id", order.user_id);
-    }
-
-    // 6) Aqui entrará a entrega no MTA (server-to-server) quando você quiser
-    // - chamar MTA_API_URL com HMAC e orderId, mtaAccount, diamonds
-    // - se MTA ok => marcar delivered
-
-    await supabaseAdmin
+    const { data: updated, error: updErr } = await supabaseAdmin
       .from("pix_orders")
       .update({
         status: "delivered",
-        delivered_at: new Date().toISOString(),
+        paid_at: nowIso,
+        delivered_at: nowIso,
+        gateway_id: String(payment.id),
       })
-      .eq("id", order.id);
+      .eq("id", order.id)
+      .is("delivered_at", null)
+      .select("id")
+      .maybeSingle();
 
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("webhook fatal", e);
-    return NextResponse.json({ ok: true });
+    if (updErr) {
+      return NextResponse.json({ error: "failed to update order", details: String(updErr) }, { status: 500 });
+    }
+
+    // Se não atualizou nada, significa que outra chamada já entregou.
+    if (!updated) {
+      return NextResponse.json({ ok: true, alreadyDelivered: true }, { status: 200 });
+    }
+
+    // 7) Entrega os diamantes (AQUI é onde você chama sua lógica de crédito real)
+    // Se seu /user/balance soma pedidos entregues, só marcar delivered já resolve o header.
+    //
+    // Se você também tem uma entrega no MTA/servidor do jogo, CHAME APENAS AQUI.
+    // Exemplo (se existir um endpoint seu):
+    // await fetch(`${process.env.APP_URL}/api/mta/add-diamonds`, { ... });
+
+    return NextResponse.json(
+      { ok: true, delivered: true, diamonds: pkg.diamonds, orderId: order.id, paymentId: payment.id },
+      { status: 200 }
+    );
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: "webhook error", details: e?.message ?? String(e) },
+      { status: 500 }
+    );
   }
 }
