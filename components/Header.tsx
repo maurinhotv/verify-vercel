@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getAvatar } from "@/lib/avatar";
@@ -26,11 +26,83 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
   // ✅ Substitui useSearchParams: lê ?s= diretamente da URL (client-only)
   const [s, setS] = useState<string>("");
 
+  // ---- anti-loop / balance guards ----
+  const lastUserRawRef = useRef<string | null>(null);
+  const inFlightRef = useRef(false);
+  const lastFetchAtRef = useRef(0);
+  const got401Ref = useRef(false);
+
   const readSectionFromUrl = useCallback(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
     setS(sp.get("s") || "");
   }, []);
+
+  // ✅ Busca saldo real no backend (fonte da verdade) — com throttle e bloqueio de 401
+  const refreshDiamonds = useCallback(
+    async (opts?: { force?: boolean }) => {
+      try {
+        // se não estiver logado, zera e não chama backend
+        if (!user) {
+          setDiamonds(0);
+          try {
+            localStorage.setItem("prizma_diamonds_v1", "0");
+          } catch {}
+          return;
+        }
+
+        // se já tomou 401, não fica martelando (só volta quando sessão mudar)
+        if (got401Ref.current && !opts?.force) return;
+
+        // throttle (evita spam)
+        const now = Date.now();
+        const cooldownMs = 8000;
+        if (!opts?.force && now - lastFetchAtRef.current < cooldownMs) return;
+
+        // evita fetch concorrente
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
+        lastFetchAtRef.current = now;
+
+        const res = await fetch("/user/balance", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        });
+
+        if (res.status === 401) {
+          // sessão inválida/expirada: para de tentar até o usuário logar de novo
+          got401Ref.current = true;
+          setDiamonds(0);
+          try {
+            localStorage.setItem("prizma_diamonds_v1", "0");
+          } catch {}
+          return;
+        }
+
+        if (!res.ok) return;
+
+        const data: any = await res.json();
+
+        // aceita vários formatos
+        const valRaw = data?.diamonds ?? data?.balance ?? data?.amount ?? 0;
+        const val = Number(valRaw) || 0;
+
+        setDiamonds(val);
+
+        // cache local (só pra UI rápida)
+        try {
+          localStorage.setItem("prizma_diamonds_v1", String(val));
+        } catch {}
+      } catch {
+        // ignora
+      } finally {
+        inFlightRef.current = false;
+      }
+    },
+    [user]
+  );
 
   useEffect(() => {
     // atualiza no mount e quando trocar de rota
@@ -81,19 +153,30 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
 
   useEffect(() => {
     const readAll = () => {
+      // ---- user: só atualiza se o JSON mudar (evita loop) ----
       try {
         const rawUser = localStorage.getItem("prizma_user");
-        setUser(rawUser ? JSON.parse(rawUser) : null);
+        if (rawUser !== lastUserRawRef.current) {
+          lastUserRawRef.current = rawUser;
+          setUser(rawUser ? JSON.parse(rawUser) : null);
+
+          // se a sessão mudou, libera tentar o /user/balance de novo
+          got401Ref.current = false;
+        }
       } catch {
+        lastUserRawRef.current = null;
         setUser(null);
+        got401Ref.current = false;
       }
 
+      // avatar
       try {
         setAvatarState(getAvatar());
       } catch {
         setAvatarState(null);
       }
 
+      // mostra algo rápido enquanto busca o valor real no backend
       try {
         const rawD = localStorage.getItem("prizma_diamonds_v1");
         setDiamonds(rawD ? Number(rawD) || 0 : 0);
@@ -105,17 +188,29 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
     readAll();
     window.addEventListener("prizma:session", readAll);
     window.addEventListener("prizma:avatar", readAll);
-    window.addEventListener("prizma:diamonds", readAll);
+
+    // quando alguém disparar evento de diamante, puxa do backend também
+    const onDiamonds = () => {
+      readAll();
+      // sincroniza com o servidor (força, mas respeita inFlight)
+      setTimeout(() => refreshDiamonds({ force: true }), 50);
+    };
+    window.addEventListener("prizma:diamonds", onDiamonds);
 
     return () => {
       window.removeEventListener("prizma:session", readAll);
       window.removeEventListener("prizma:avatar", readAll);
-      window.removeEventListener("prizma:diamonds", readAll);
+      window.removeEventListener("prizma:diamonds", onDiamonds);
     };
-  }, []);
+  }, [refreshDiamonds]);
+
+  // quando user muda (login/logout), sincroniza o saldo real (com throttle)
+  useEffect(() => {
+    refreshDiamonds({ force: true });
+  }, [refreshDiamonds]);
 
   const goHome = () => {
-    setS(""); // ✅ atualiza estado local
+    setS("");
     if (pathname === "/") {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -124,7 +219,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
   };
 
   const goSection = (section: "noticias" | "diamantes") => {
-    setS(section); // ✅ atualiza estado local (evita depender de hook de search params)
+    setS(section);
 
     if (pathname === "/") {
       const el = document.getElementById(section);
@@ -194,7 +289,10 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
                 ACESSAR PAINEL <span className="arrow">›</span>
               </button>
 
-              <div className="account-pill__diamond">
+              <div
+                className="account-pill__diamond"
+                title="Se não atualizar, recarregue o painel ou aguarde alguns segundos."
+              >
                 <img src="/diamond.svg" alt="Diamante" />
                 <span className="account-pill__diamondText">{diamonds}</span>
               </div>
@@ -213,6 +311,12 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
                 title="Sair"
                 onClick={() => {
                   clearSession();
+                  setDiamonds(0);
+                  try {
+                    localStorage.setItem("prizma_diamonds_v1", "0");
+                  } catch {}
+                  got401Ref.current = false;
+                  lastFetchAtRef.current = 0;
                   onLogout();
                 }}
               >
