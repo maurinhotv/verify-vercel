@@ -1,35 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Middleware roda no EDGE: NÃO pode usar __dirname, fs, path, supabase, bcrypt etc.
+// EDGE SAFE: não use/importe nada de Node aqui (fs, path, crypto, supabase, bcrypt, __dirname etc)
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  // Só protege o /painel. Se não tiver cookie, manda pra home abrindo login.
+  const token = req.cookies.get("session_token")?.value;
 
-  // Ignora rotas internas e arquivos
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/api")
-  ) {
-    return NextResponse.next();
-  }
-
-  // Protege o painel só checando cookie (sem DB)
-  if (pathname.startsWith("/painel")) {
-    const token = req.cookies.get("session_token")?.value;
-
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("openLogin", "1");
-      return NextResponse.redirect(url);
-    }
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    url.searchParams.set("openLogin", "1");
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
 }
 
+// Rodar middleware APENAS no painel (isso evita quebrar / e /favicon.png etc)
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/painel/:path*"],
 };
