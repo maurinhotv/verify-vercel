@@ -1,0 +1,1341 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* No topo do globals.css */
+
+
+:root {
+  --pink: #FF69B4;
+  --green: #FF69B4;
+  --bg-dark: #0b0d0b;
+  --bg-panel: #101210;
+  --text-main: rgba(255,255,255,.92);
+  --text-muted: rgba(255,255,255,.65); 
+}
+
+/* Base */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Scrollbar rosa */
+* { scrollbar-width: thin; scrollbar-color: var(--pink) rgba(255,255,255,.10); }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,.08); }
+::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #ff4faa; }
+
+/* Header fixo (tamanho constante) */
+.header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 88px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease;
+  border-bottom: 1px solid transparent;
+}
+.header--top {
+  background: transparent;
+  backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+.header--scrolled {
+  background: rgba(16,18,16,.55);
+  backdrop-filter: blur(14px);
+  border-bottom-color: rgba(255,255,255,.06);
+}
+
+/* Nav links */
+.nav-link {
+  color: rgba(255,255,255,.80);
+  font-weight: 600;
+  letter-spacing: .2px;
+  transition: color .2s ease, opacity .2s ease;
+  opacity: .9;
+}
+.nav-link:hover { opacity: 1; color: #fff; }
+.nav-link.active { color: var(--pink); opacity: 1; }
+
+/* Pills topo */
+.pill {
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Área do usuário logado (retângulo cinza destacado) */
+.userbox {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.18);
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userbox .meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.userbox .name {
+  font-weight: 800;
+  font-size: 14px;
+  color: rgba(255,255,255,.95);
+}
+.userbox .id {
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255,255,255,.70);
+}
+.btn-panel {
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  transition: transform .2s ease, filter .2s ease, background .2s ease;
+}
+.btn-panel:hover {
+  transform: translateY(-1px);
+  background: rgba(0,0,0,.5);
+}
+
+/* Hero */
+.hero {
+  min-height: 100vh;
+  padding-top: 88px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: url("/hero-bg.webp") center/cover no-repeat;
+  z-index: 0;
+}
+.hero-content {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  max-width: 980px;
+  padding: 0 18px;
+}
+.hero-logo {
+  width: min(430px, 86vw);
+  margin: 0 auto 30px;
+}
+.hero-subtitle {
+  color: rgba(255, 255, 255, 100);
+  font-size: 30px;
+  font-weight: 450;
+  margin-bottom: 26px;
+}
+
+/* Botões da home (com fundo restaurado) */
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-primary {
+  background: var(--green);
+  color: #000;
+  font-weight: 900;
+  font-size: 25px;          /* ⬅ tamanho do texto */
+  padding: 11px 80px;       /* ⬅ estica o botão pros lados */
+  border-radius: 12px;      /* rounded-lg */
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;                /* ⬅ espaço entre ícone e texto */
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+/* Ícone dentro do botão */
+.btn-primary img {
+  width: 22px;              /* ⬅ tamanho do ícone */
+  height: 22px;
+}
+
+.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.08); }
+
+.btn-secondary {
+  background: rgba(255,255,255,.14); /* fundo restaurado */
+  color: #fff;
+  font-weight: 900;
+  padding: 16px 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform .2s ease, background .2s ease;
+}
+.btn-secondary:hover { transform: translateY(-2px); background: rgba(255,255,255,.18); }
+
+/* Ícones sociais */
+.hero-social {
+  margin-top: 18px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  opacity: .95;
+}
+.hero-social a { opacity: .8; transition: opacity .2s ease, transform .2s ease; }
+.hero-social a:hover { opacity: 1; transform: translateY(-1px); }
+
+/* Character animação slide-in */
+.hero-character {
+  position: absolute;
+  left: 15%;                  /* ⬅ posição FINAL */
+  bottom: 0;
+  width: min(450px, 50vw);
+  z-index: 4;
+  pointer-events: none;
+
+  opacity: 0;
+  animation: heroSlideIn .85s ease-out .15s forwards;
+}
+
+
+
+@keyframes heroSlideIn {
+  from {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+/* Seções */
+.section {
+  padding: 110px 0;
+}
+.section-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 18px;
+}
+.section-news { background: var(--bg-panel); } /* pedido 2 */
+.section-diamonds {
+  background:
+    /* Cor preta com 40% de opacidade */
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+    url("/diamonds.jpg") center/cover no-repeat;
+  
+  /* O background-blend-mode: overlay; não é estritamente necessário com a configuração acima, 
+     mas pode ser mantido se desejar um efeito de mistura específico. */
+}
+
+.section-title {
+  font-size: clamp(34px, 4vw, 54px);
+  font-weight: 1000;
+  text-align: center;
+  color: var(--pink);
+  letter-spacing: .6px;
+}
+.section-subtitle {
+  text-align: center;
+  color: rgba(255,255,255,.75);
+  margin: 10px auto 60px;
+  max-width: 720px;
+  font-weight: 700;
+}
+
+.cardpath {
+  background: rgba(40, 66, 64,.06);
+  border: 1px solid rgba(255,255,255,.12); /* Mantém a borda branca */
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  /* Adiciona 'outline-color' à transição para um efeito suave */
+  transition: transform .25s ease, box-shadow .25s ease, outline-color .25s ease;
+}
+/* Cards */
+.card {
+  background: rgba(40, 66, 64,.06);
+  border: 1px solid rgba(255,255,255,.12); /* Mantém a borda branca */
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  /* Adiciona o contorno azul por fora */
+  outline: 2px solid #77E4FB; 
+  /* Adiciona 'outline-color' à transição para um efeito suave */
+  transition: transform .25s ease, box-shadow .25s ease, outline-color .25s ease;
+}
+.card:hover { 
+  transform: translateY(-6px); 
+  box-shadow: 0 24px 60px rgba(0,0,0,.45); 
+  /* outline-color: transparent; // Opcional: esconde no hover */
+}
+
+
+/* Diamond card "base do diamante" (pedido 2) */
+.diamond-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  position: relative;
+}
+.diamond-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -7px;
+  width: 18px;         /* base */
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(125, 232, 255, .75);
+  box-shadow: 0 0 14px rgba(125, 232, 255, .35);
+}
+
+/* Footer */
+.footer {
+  background: var(--bg-panel); /* pedido 3 */
+  padding: 40px 0;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.footer-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.footer-text { color: rgba(255,255,255,.70); font-size: 14px; font-weight: 700; }
+.footer-icons a { opacity: .75; transition: opacity .2s ease, transform .2s ease; }
+.footer-icons a:hover { opacity: 1; transform: translateY(-1px); }
+
+/* ============================================================
+   ✅ OVERRIDE: TODOS OS BOTÕES COM rounded-lg (12px)
+   (não remove nada do seu CSS, só sobrescreve no final)
+   ============================================================ */
+
+/* Qualquer <button> */
+button { border-radius: 12px !important; }
+
+/* Botões/links com estilo de botão */
+.btn-primary,
+.btn-secondary,
+.btn-panel { border-radius: 12px !important; }
+
+/* Seus "pills" (CRIAR CONTA / ENTRAR) também são botões */
+.pill { border-radius: 12px !important; }
+
+/* Botões do Tailwind usados no page.tsx (COMPRAR etc) */
+a.rounded-xl,
+a.rounded-full,
+button.rounded-xl,
+button.rounded-full,
+div.rounded-xl > button,
+div.rounded-full > button { border-radius: 12px !important; }
+
+
+/* ============================================================
+   ✅ USERBAR LOGADO (igual print)
+   ============================================================ */
+
+.userbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(14px);
+  padding: 10px 12px;
+  border-radius: 12px; /* rounded-lg */
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+}
+
+.userbar-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 14px;
+  border-radius: 12px; /* rounded-lg */
+  border: 1px solid rgba(183,255,30,.70);
+  background: rgba(0,0,0,.25);
+  color: rgba(255, 105, 180,.95);
+  font-weight: 900;
+  letter-spacing: .2px;
+  text-transform: uppercase;
+  transition: transform .18s ease, filter .18s ease, background .18s ease;
+}
+.userbar-btn:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  background: rgba(0,0,0,.35);
+}
+.userbar-arrow{
+  color: rgba(255, 105, 180,.95);
+  font-weight: 900;
+  margin-left: 2px;
+}
+
+.userbar-chip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 10px;
+  border-radius: 12px; /* rounded-lg */
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.28);
+}
+.userbar-diamond{
+  color: rgba(255,255,255,.90);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.userbar-dcount{
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.userbar-profile{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-left: 2px;
+}
+.userbar-avatar{
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.10);
+}
+.userbar-meta{
+  display:flex;
+  flex-direction:column;
+  line-height: 1.05;
+}
+.userbar-name{
+  color: rgba(255,255,255,.94);
+  font-weight: 900;
+  font-size: 13px;
+}
+.userbar-id{
+  color: rgba(255,255,255,.60);
+  font-weight: 800;
+  font-size: 12px;
+}
+.userbar-caret{
+  color: rgba(255,255,255,.70);
+  font-weight: 900;
+  margin-left: 4px;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   HEADER: layout “logo | menu | userbar” (igual inspiração)
+   ============================================================ */
+
+.header-row{
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Logo */
+.header-brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+/* Menu central (só Notícias/Diamantes) */
+.header-menu{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 34px;
+}
+
+@media (max-width: 768px){
+  .header-menu{ display:none; }
+}
+.header-right{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+/* ============================================================
+   USERBAR LOGADO: igual ao print da inspiração
+   ============================================================ */
+
+.userbar2{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;         /* rounded-lg */
+  background: rgba(0,0,0,.55); /* caixa escura */
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+}
+
+/* Botão acessar painel (contorno verde, texto verde) */
+.userbar2-btn{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 7px 12px;        /* ⬅ menor */
+  height: 32px;             /* ⬅ controla a base */
+  border-radius: 12px;      /* rounded-lg */
+  border: 1px solid rgba(255, 105, 180,.95);
+  background: rgba(0,0,0,.22);
+  color: rgba(255, 105, 180,.95);
+  font-weight: 800;         /* ⬅ um pouco menos pesado */
+  font-size: 12px;          /* ⬅ menor */
+  letter-spacing: .15px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform .18s ease, filter .18s ease, background .18s ease;
+}
+
+
+.userbar2-btn:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  background: rgba(0,0,0,.32);
+}
+.userbar2-go{
+  font-weight: 900;
+  transform: translateY(-1px);
+}
+
+/* Chip diamantes (quadradinho com borda, igual inspiração) */
+.userbar2-chip{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px; /* ainda rounded mas menos que o container */
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.25);
+}
+.userbar2-diamond{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(255,255,255,.92);
+}
+.userbar2-count{
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* Perfil */
+.userbar2-profile{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding-left: 2px;
+}
+.userbar2-avatar{
+  width: 26px;
+  height: 26px;
+  border-radius: 999px; /* no print é mais “bolinha” */
+  background: linear-gradient(145deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.10);
+}
+.userbar2-meta{
+  display:flex;
+  flex-direction:column;
+  line-height: 1.05;
+}
+.userbar2-name{
+  color: rgba(255,255,255,.94);
+  font-weight: 900;
+  font-size: 13px;
+}
+.userbar2-id{
+  color: rgba(255,255,255,.60);
+  font-weight: 800;
+  font-size: 12px;
+}
+.userbar2-caret{
+  color: rgba(255,255,255,.70);
+  font-weight: 900;
+  margin-left: 4px;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   HERO: logo do centro menor (sem mexer no layout)
+   ============================================================ */
+.hero-logo--sm{
+  width: min(430px, 82vw);
+  margin-bottom: 14px;
+}
+
+/* ============================================================
+   HERO: animação dos ícones ao entrar (sequencial L->R)
+   ============================================================ */
+@keyframes socialUpIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-social--enter .hero-social-item{
+  opacity: 0;
+  animation: socialUpIn .55s ease forwards;
+}
+
+.hero-social--enter .hero-social-item:nth-child(1){ animation-delay: .05s; }
+.hero-social--enter .hero-social-item:nth-child(2){ animation-delay: .12s; }
+.hero-social--enter .hero-social-item:nth-child(3){ animation-delay: .19s; }
+.hero-social--enter .hero-social-item:nth-child(4){ animation-delay: .26s; }
+
+/* ============================================================
+   PAINEL (estilo do print)
+   ============================================================ */
+
+.panel-wrap{
+  width: min(1050px, 100%);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+@media (max-width: 860px){
+  .panel-wrap{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* bloco da foto */
+.panel-avatar{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+
+.panel-avatar-inner{
+  border-radius: 14px;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+}
+
+.panel-avatar-img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+.panel-avatar-placeholder{
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(700px 300px at 40% 20%, rgba(255,105,180,.14), transparent 55%),
+    linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,.60));
+}
+
+.panel-avatar-actions{
+  display:flex;
+  gap: 10px;
+}
+
+/* card infos */
+.panel-card{
+  border-radius: 14px;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 50px rgba(0,0,0,.45);
+  padding: 22px;
+  backdrop-filter: blur(14px);
+}
+
+.panel-name{
+  margin-top: 6px;
+  font-weight: 1000;
+  font-size: 34px;
+  line-height: 1.05;
+  color: rgba(255,255,255,.95);
+}
+
+.panel-hash{
+  font-weight: 900;
+  color: rgba(255,255,255,.75);
+  margin-left: 10px;
+  font-size: 18px;
+}
+
+.panel-diamonds{
+  margin-top: 6px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: rgba(255,255,255,.90);
+}
+
+.panel-diamond-ic{
+  color: rgba(125,232,255,.95);
+  filter: drop-shadow(0 0 10px rgba(125,232,255,.30));
+  font-weight: 900;
+  transform: translateY(-1px);
+}
+
+.panel-diamond-num{
+  font-weight: 1000;
+  font-size: 20px;
+}
+
+.panel-actions{
+  margin-top: 16px;
+  display:flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* botões estilo print */
+.panel-btn-solid{
+  border-radius: 12px; /* rounded-lg */
+  padding: 12px 18px;
+  font-weight: 1000;
+  letter-spacing: .2px;
+  background: rgba(255, 105, 180,.95);
+  color: #000;
+  border: 1px solid rgba(183,255,30,.70);
+  transition: transform .18s ease, filter .18s ease;
+}
+.panel-btn-solid:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.panel-btn-outline{
+  border-radius: 12px; /* rounded-lg */
+  padding: 12px 18px;
+  font-weight: 1000;
+  letter-spacing: .2px;
+  background: rgba(0,0,0,.22);
+  color: rgba(255, 105, 180,.95);
+  border: 1px solid rgba(183,255,30,.70);
+  transition: transform .18s ease, filter .18s ease, background .18s ease;
+}
+.panel-btn-outline:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  background: rgba(0,0,0,.32);
+}
+
+.panel-btn-ghost{
+  border-radius: 12px; /* rounded-lg */
+  padding: 12px 14px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.88);
+  border: 1px solid rgba(255,255,255,.10);
+  transition: transform .18s ease, filter .18s ease, background .18s ease;
+}
+.panel-btn-ghost:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  background: rgba(255,255,255,.08);
+}
+.panel-btn-ghost:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================
+   HEADER (layout corrigido)
+   ========================= */
+
+:root{
+  --pink: #ff66c4;
+  --pink-2: #ff86d3;
+  --header-bg: rgba(0,0,0,.45);
+  --header-border: rgba(255,255,255,.10);
+}
+
+.site-header{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 14px 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
+  transition: background .2s ease, backdrop-filter .2s ease;
+}
+
+.site-header.is-scrolled{
+  /* Cor rosa (255, 102, 196) com 30% de opacidade */
+  background: rgba(16, 18, 16, 0.40); 
+  backdrop-filter: blur(8px);
+
+}
+
+
+.site-header__container{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* LEFT */
+.site-header__logo{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+
+.site-header__logoMark{
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
+  background: var(--pink);
+  box-shadow: 0 0 0 2px rgba(255, 102, 196, .25);
+}
+
+.site-header__logoText{
+  font-weight: 900;
+  letter-spacing: .06em;
+  font-size: 14px;
+  opacity: .95;
+}
+
+/* CENTER */
+.site-header__nav{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* centraliza as abas */
+  gap: 22px;
+}
+
+.site-header__navLink{
+  background: transparent;
+  border: 0;
+  color: rgba(255,255,255,.99);
+  font-weight: 600;
+  letter-spacing: .02em;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 10px;
+  /* Removido o border-radius: 10px; */
+  transition: color .15s ease; /* Simplificado a transição */
+}
+
+/* Efeito de hover: Fica branco */
+.site-header__navLink:hover {
+  color: #fff;
+}
+
+/* Efeito de ativo: Fica rosa */
+.site-header__navLink.active {
+  color: var(--pink);
+}
+
+
+
+
+/* RIGHT */
+.site-header__actions{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Botões (rounded-lg) */
+.btn-header{
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px; /* rounded-lg */
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+}
+
+.btn-header:active{
+  transform: scale(.98);
+}
+
+.btn-header--primary{
+  background: var(--pink);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #0b0b0b;
+}
+
+.btn-header--primary:hover{
+  background: var(--pink-2);
+}
+
+.btn-header--ghost{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.95);
+}
+
+.btn-header--ghost:hover{
+  background: rgba(255,255,255,.10);
+}
+
+.btn-header--danger{
+  background: rgba(255, 80, 80, .14);
+  border: 1px solid rgba(255, 80, 80, .25);
+  color: #fff;
+}
+
+.btn-header--danger:hover{
+  background: rgba(255, 80, 80, .22);
+}
+
+/* Caixa do usuário (quando logado) */
+.site-header__userbox{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.site-header__userdata{
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  margin-right: 4px;
+}
+
+.site-header__username{
+  color: #fff;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.site-header__usertag{
+  color: rgba(255,255,255,.7);
+  font-weight: 800;
+  font-size: 11px;
+}
+
+/* Mobile: esconde menu do meio pra não quebrar */
+@media (max-width: 720px){
+  .site-header__nav{
+    display: none;
+  }
+}
+
+/* ====== HEADER: pill do usuário (igual referência) ====== */
+
+.account-pill{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  background: rgba(0,0,0,.62);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+}
+
+.account-pill__panel{
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(174, 255, 0, .55);
+  color: rgb(174, 255, 0);
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-size: 12px;
+  text-transform: uppercase;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  transition: transform .15s ease, background .15s ease;
+}
+.account-pill__panel:hover{
+  background: rgba(0,0,0,.55);
+  transform: translateY(-1px);
+}
+.account-pill__panel .arrow{
+  opacity:.9;
+  font-size: 14px;
+  margin-top:-1px;
+}
+
+.account-pill__diamond{
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.92);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.account-pill__diamondText{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.account-pill__avatar{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  display:grid;
+  place-items:center;
+}
+.account-pill__avatar img{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+}
+.account-pill__avatarFallback{
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.20), rgba(255,255,255,.06));
+}
+
+.account-pill__meta{
+  display:flex;
+  flex-direction:column;
+  line-height:1.05;
+  padding-right:4px;
+}
+.account-pill__name{
+  color:#fff;
+  font-weight: 900;
+  font-size: 13px;
+}
+.account-pill__id{
+  color: rgba(255,255,255,.65);
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.account-pill__logout{
+  height: 38px;
+  width: 40px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  transition: background .15s ease;
+}
+.account-pill__logout:hover{
+  background: rgba(0,0,0,.55);
+}
+
+/* =========================================
+   SEU CSS ATUAL (MANTIDO)
+   ========================================= */
+
+/* Footer */
+.footer {
+  background: var(--bg-panel); /* pedido 3 */
+  padding: 40px 0;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.footer-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.footer-text { color: rgba(255,255,255,.70); font-size: 14px; font-weight: 700; }
+.footer-icons a { opacity: .75; transition: opacity .2s ease, transform .2s ease; }
+.footer-icons a:hover { opacity: 1; transform: translateY(-1px); }
+
+/* ============================================================
+   ✅ OVERRIDE: TODOS OS BOTÕES COM rounded-lg (12px)
+   (não remove nada do seu CSS, só sobrescreve no final)
+   ============================================================ */
+
+/* Qualquer <button> */
+button { border-radius: 12px !important; }
+
+/* Botões/links com estilo de botão */
+.btn-primary,
+.btn-secondary,
+.btn-panel { border-radius: 12px !important; }
+
+/* Seus "pills" (CRIAR CONTA / ENTRAR) também são botões */
+.pill { border-radius: 12px !important; }
+
+/* Botões do Tailwind usados no page.tsx (COMPRAR etc) */
+a.rounded-xl,
+a.rounded-full,
+button.rounded-xl,
+button.rounded-full,
+div.rounded-xl > button,
+div.rounded-full > button { border-radius: 12px !important; }
+
+/* ============================================================
+   ✅ HEADER: pill do usuário (igual referência)
+   ============================================================ */
+
+.account-pill{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  background: rgba(16, 18, 16, 100);
+  border: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(10px);
+}
+
+.account-pill__panel{
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255, 105, 180,.95);
+  color: rgb(255, 105, 180,.95);
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-size: 12px;
+  text-transform: uppercase;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  transition: transform .15s ease, background .15s ease;
+}
+.account-pill__panel:hover{
+  background: rgba(0,0,0,.55);
+  transform: translateY(-1px);
+}
+.account-pill__panel .arrow{
+  opacity:.9;
+  font-size: 14px;
+  margin-top:-1px;
+}
+
+.account-pill__diamond{
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.92);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.account-pill__diamondText{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.account-pill__avatar{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  display:grid;
+  place-items:center;
+}
+.account-pill__avatar img{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+}
+.account-pill__avatarFallback{
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.20), rgba(255,255,255,.06));
+}
+
+.account-pill__meta{
+  display:flex;
+  flex-direction:column;
+  line-height:1.05;
+  padding-right:4px;
+}
+.account-pill__name{
+  color:#fff;
+  font-weight: 900;
+  font-size: 13px;
+}
+.account-pill__id{
+  color: rgba(255,255,255,.65);
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.account-pill__logout{
+  height: 38px;
+  width: 40px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  transition: background .15s ease;
+}
+.account-pill__logout:hover{
+  background: rgba(0,0,0,.55);
+}
+
+/* Mobile: esconde menu do meio pra não quebrar */
+@media (max-width: 720px){
+  .site-header__nav{
+    display: none;
+  }
+}
+
+/* =========================================
+   ✅ ADIÇÕES PEDIDAS AGORA (SEM QUEBRAR DESIGN)
+   ========================================= */
+
+/* ✅ Home: botão jogar agora sozinho e centralizado */
+.hero-actions.hero-actions--single{
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+/* ✅ Animação sequencial dos ícones (subindo + aparecendo) */
+@keyframes icon-rise-in {
+  0%   { opacity: 0; transform: translateY(14px) scale(.94); }
+  70%  { opacity: 1; transform: translateY(-2px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* aplica só nos ícones da home */
+.hero-social.hero-social--seq a{
+  opacity: 0;
+  transform: translateY(14px) scale(.94);
+  animation: icon-rise-in .55s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+/* sequencial da esquerda -> direita */
+.hero-social.hero-social--seq a:nth-child(1){ animation-delay: .05s; }
+.hero-social.hero-social--seq a:nth-child(2){ animation-delay: .13s; }
+.hero-social.hero-social--seq a:nth-child(3){ animation-delay: .21s; }
+.hero-social.hero-social--seq a:nth-child(4){ animation-delay: .29s; }
+
+@keyframes heroContentUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-60);
+  }
+}
+
+/* anima a “parte do meio” (logo + texto + botão) */
+.hero-content {
+  opacity: 0;
+  animation: heroContentUp 1.2s cubic-bezier(.16, 1, .3, 1) .15s forwards;
+}
+
+
+/* ============================================================
+   ✅ SOBREPOSIÇÃO DE COR E VINHETA PARA O HERO
+   ============================================================ */
+
+/* Camada de cor escura sobre a imagem (a sobreposição principal) */
+/* ============================================================
+   ✅ SOBREPOSIÇÃO DE COR, VINHETA E DESFOQUE DISTORCIDO
+   ============================================================ */
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  /* Fundo semitransparente (preto com 15% de opacidade) */
+  background-color: rgba(0, 0, 0, 0.15); 
+  
+  /* Desfoque (Blur) aplicado ao que está por trás deste elemento */
+  backdrop-filter: blur(0.5px); 
+  
+  z-index: 1; 
+}
+
+/* Opcional: Efeito de vinheta (escurecimento nas bordas) */
+.hero-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  z-index: 2;
+}
