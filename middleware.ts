@@ -1,11 +1,35 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(_req: NextRequest) {
-  // NÃO use crypto / bcrypt / supabase / cookies aqui (Edge Runtime).
-  // Mantém o site funcionando sem CSRF no middleware.
+// Middleware roda no EDGE: NÃO importe supabase, bcrypt, crypto etc.
+
+export function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Ignora rotas que não precisam
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon.ico") ||
+    pathname.startsWith("/api")
+  ) {
+    return NextResponse.next();
+  }
+
+  // Protege o painel (checa só existência do cookie)
+  if (pathname.startsWith("/painel")) {
+    const token = req.cookies.get("session_token")?.value;
+
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("openLogin", "1");
+      return NextResponse.redirect(url);
+    }
+  }
+
   return NextResponse.next();
 }
 
-// Se você tinha matcher, deixe assim ou apague.
-// export const config = { matcher: ["/((?!_next|favicon.ico).*)"] };
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
