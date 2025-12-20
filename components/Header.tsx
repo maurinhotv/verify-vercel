@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { clearSession } from "@/lib/auth";
 import { getAvatar } from "@/lib/avatar";
 
@@ -13,26 +13,35 @@ type HeaderProps = {
   onLogout: () => void;
 };
 
-function DiamondMini() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[14px] w-[14px]" fill="none" aria-hidden="true">
-      <path d="M12 3l7 6-7 12L5 9l7-6Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export default function Header({ onOpenLogin, onOpenRegister, onLogout }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
   const [user, setUser] = useState<UserInfo>(null);
   const [avatar, setAvatarState] = useState<string | null>(null);
-
   const [diamonds, setDiamonds] = useState<number>(0);
-  const s = searchParams.get("s") || "";
+
+  // ✅ Substitui useSearchParams: lê ?s= diretamente da URL (client-only)
+  const [s, setS] = useState<string>("");
+
+  const readSectionFromUrl = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    setS(sp.get("s") || "");
+  }, []);
+
+  useEffect(() => {
+    // atualiza no mount e quando trocar de rota
+    readSectionFromUrl();
+
+    // atualiza quando usuário usar voltar/avançar
+    const onPop = () => readSectionFromUrl();
+    window.addEventListener("popstate", onPop);
+
+    return () => window.removeEventListener("popstate", onPop);
+  }, [pathname, readSectionFromUrl]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -61,6 +70,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // scroll automático quando vier /?s=...
   useEffect(() => {
     const target = s;
     if (!target) return;
@@ -105,6 +115,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
   }, []);
 
   const goHome = () => {
+    setS(""); // ✅ atualiza estado local
     if (pathname === "/") {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -113,12 +124,18 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
   };
 
   const goSection = (section: "noticias" | "diamantes") => {
+    setS(section); // ✅ atualiza estado local (evita depender de hook de search params)
+
     if (pathname === "/") {
       const el = document.getElementById(section);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      else router.push(`/?s=${section}`, { scroll: false });
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        router.push(`/?s=${section}`, { scroll: false });
+      }
       return;
     }
+
     router.push(`/?s=${section}`, { scroll: false });
   };
 
@@ -142,7 +159,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
           <span className="site-header__logoText">prizmaroleplay</span>
         </button>
 
-        {/* CENTER (✅ Home / Notícias / Diamantes) */}
+        {/* CENTER */}
         <nav className="site-header__nav" aria-label="Menu">
           <button className={`site-header__navLink ${isActive.home ? "active" : ""}`} onClick={goHome}>
             Home
