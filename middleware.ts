@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Middleware roda no EDGE: NÃO importe supabase, bcrypt, crypto etc.
+// Middleware roda no EDGE: NÃO pode usar __dirname, fs, path, supabase, bcrypt etc.
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Ignora rotas que não precisam
+  // Ignora rotas internas e arquivos
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
@@ -15,7 +15,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protege o painel (checa só existência do cookie)
+  // Protege o painel só checando cookie (sem DB)
   if (pathname.startsWith("/painel")) {
     const token = req.cookies.get("session_token")?.value;
 
