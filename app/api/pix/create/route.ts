@@ -1,3 +1,4 @@
+// app/api/pix/create/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
@@ -8,12 +9,9 @@ type Body = {
   packageId?: number;
 };
 
-function jsonError(status: number, error: string, details?: any) {
+function jsonError(status: number, error: string, details?: unknown) {
   return NextResponse.json(
-    {
-      error,
-      ...(details ? { details: typeof details === "string" ? details : JSON.stringify(details) } : {}),
-    },
+    { error, ...(details ? { details } : {}) },
     { status }
   );
 }
@@ -24,128 +22,181 @@ function requireEnv(name: string) {
   return v;
 }
 
+function moneyFromCents(cents: number) {
+  // Mercado Pago espera number em reais (ex: 69.90)
+  return Math.round(Number(cents)) / 100;
+}
+
 export async function POST(req: Request) {
   try {
-    // ===== ENV =====
-    const SUPABASE_URL = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-    const SERVICE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-    const MP_ACCESS_TOKEN = requireEnv("MP_ACCESS_TOKEN");
-    const APP_URL = requireEnv("APP_URL"); // ex: https://seusite.vercel.app
+    const { packageId }: Body = await req.json().catch(() => ({}));
 
-    // ===== BODY =====
-    const body = (await req.json().catch(() => ({}))) as Body;
-    const packageId = Number(body?.packageId);
-    if (!packageId) return jsonError(400, "Pacote inválido");
+    if (!packageId || typeof packageId !== "number") {
+      return jsonError(400, "packageId inválido");
+    }
 
-    // ===== AUTH (cookie) =====
+    // =========================
+    // 1) AUTH (cookie session_token)
+    // =========================
+    // Next 16: cookies() pode ser async
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session_token")?.value;
-    if (!sessionToken) return jsonError(401, "Não autenticado.");
 
-    // ===== SUPABASE (admin) =====
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+    if (!sessionToken) {
+      return jsonError(401, "Não autenticado.");
+    }
+
+    // =========================
+    // 2) SUPABASE ADMIN
+    // =========================
+    const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
+    const serviceKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
 
-    // 1) valida sessão -> pega usuário
-    const { data: sessionRow, error: sessionErr } = await supabase
+    // pega sessão
+    const { data: sessionRow, error: sessionErr } = await supabaseAdmin
       .from("sessions")
-      .select("user_id")
+      .select("user_id, token")
       .eq("token", sessionToken)
       .single();
 
-    if (sessionErr || !sessionRow?.user_id) return jsonError(401, "Sessão inválida.");
+    if (sessionErr || !sessionRow?.user_id) {
+      return jsonError(401, "Sessão inválida.", sessionErr?.message);
+    }
 
-    const userId = sessionRow.user_id;
-
-    // 2) pega pacote (fonte da verdade do valor e diamonds)
-    const { data: pkg, error: pkgErr } = await supabase
-      .from("diamond_packages")
-      .select("id, diamonds, price_cents, active")
-      .eq("id", packageId)
-      .eq("active", true)
+    // pega user (não usa mta_account!)
+    const { data: user, error: userErr } = await supabaseAdmin
+      .from("users")
+      .select("id, username")
+      .eq("id", sessionRow.user_id)
       .single();
 
-    if (pkgErr || !pkg) return jsonError(400, "Pacote inválido");
+    if (userErr || !user) {
+      return jsonError(401, "Usuário não encontrado.", userErr?.message);
+    }
 
-    // 3) cria pedido local (pending)
-    const { data: order, error: orderErr } = await supabase
+    // =========================
+    // 3) BUSCA PACOTE NO BANCO
+    // =========================
+    const { data: pack, error: packErr } = await supabaseAdmin
+      .from("diamond_packages")
+      .select("id, name, diamonds, price_cents, active")
+      .eq("id", packageId)
+      .single();
+
+    if (packErr || !pack) {
+      return jsonError(404, "Pacote não encontrado.", packErr?.message);
+    }
+
+    if (!pack.active) {
+      return jsonError(400, "Pacote indisponível.");
+    }
+
+    const priceCents = Number(pack.price_cents) || 0;
+    if (priceCents <= 0) {
+      return jsonError(400, "Preço inválido para este pacote.");
+    }
+
+    // =========================
+    // 4) CRIA PEDIDO LOCAL (pix_orders)
+    // =========================
+    const { data: order, error: orderErr } = await supabaseAdmin
       .from("pix_orders")
       .insert({
-        user_id: userId,
-        package_id: pkg.id,
+        user_id: user.id,
+        mta_account: user.username, // mantém compatibilidade com sua tabela
+        package_id: pack.id,
         status: "pending",
-        diamonds: pkg.diamonds,
-        price_cents: pkg.price_cents,
       })
-      .select("*")
+      .select("id")
       .single();
 
-    if (orderErr || !order) return jsonError(500, "Erro ao criar pedido");
+    if (orderErr || !order?.id) {
+      return jsonError(500, "Erro ao criar pedido", orderErr?.message);
+    }
 
-    // ===== MERCADO PAGO: cria Preference (Checkout) =====
-    const unitPrice = Number(pkg.price_cents) / 100;
+    // =========================
+    // 5) MERCADO PAGO CHECKOUT (Preference)
+    // =========================
+    const mpToken = requireEnv("MP_ACCESS_TOKEN");
+    const appUrl = requireEnv("APP_URL"); // ex: https://seusite.com
 
-    const mpPayload = {
+    // URLs de retorno (ajuste se você tiver páginas específicas)
+    const successUrl = `${appUrl}/diamantes?status=success`;
+    const failureUrl = `${appUrl}/diamantes?status=failure`;
+    const pendingUrl = `${appUrl}/diamantes?status=pending`;
+
+    // webhook (se você usa)
+    const notificationUrl = `${appUrl}/api/pix/webhook`;
+
+    const preferenceBody = {
       external_reference: String(order.id),
       items: [
         {
-          title: `${pkg.diamonds} Diamantes`,
+          id: String(pack.id),
+          title: `Diamantes - ${pack.name}`,
+          description: `${pack.diamonds} diamantes`,
           quantity: 1,
           currency_id: "BRL",
-          unit_price: unitPrice,
+          unit_price: moneyFromCents(priceCents),
         },
       ],
       back_urls: {
-        success: `${APP_URL}/?payment=success&order=${order.id}`,
-        pending: `${APP_URL}/?payment=pending&order=${order.id}`,
-        failure: `${APP_URL}/?payment=failure&order=${order.id}`,
+        success: successUrl,
+        failure: failureUrl,
+        pending: pendingUrl,
       },
       auto_return: "approved",
-      notification_url: `${APP_URL}/api/pix/webhook`,
+      notification_url: notificationUrl,
     };
 
     const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${mpToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(mpPayload),
+      body: JSON.stringify(preferenceBody),
     });
 
-    const mpText = await mpRes.text();
+    const mpData: any = await mpRes.json().catch(() => ({}));
 
-    if (!mpRes.ok) {
-      // guarda erro pra debug
-      await supabase.from("pix_orders").update({ status: "error" }).eq("id", order.id);
-      return jsonError(400, "MP error", mpText);
+    if (!mpRes.ok || !mpData?.id || !(mpData?.init_point || mpData?.sandbox_init_point)) {
+      // marca pedido como erro (não quebra nada se não existir a coluna)
+      await supabaseAdmin
+        .from("pix_orders")
+        .update({ status: "error" })
+        .eq("id", order.id);
+
+      return jsonError(
+        502,
+        "Erro ao gerar checkout no Mercado Pago.",
+        mpData
+      );
     }
 
-    const mpJson = JSON.parse(mpText);
-
-    const checkoutUrl: string | undefined =
-      mpJson?.init_point || mpJson?.sandbox_init_point || mpJson?.checkout_url;
-
-    if (!checkoutUrl) {
-      await supabase.from("pix_orders").update({ status: "error" }).eq("id", order.id);
-      return jsonError(500, "MP error", "Resposta do MP sem init_point");
-    }
-
-    // salva preference_id (ajuda no webhook depois)
-    await supabase
+    // salva id da preferência no gateway_id (útil pro webhook)
+    await supabaseAdmin
       .from("pix_orders")
       .update({
-        mp_preference_id: mpJson?.id ?? null,
+        gateway_id: String(mpData.id),
       })
       .eq("id", order.id);
 
-    // ✅ O FRONT PRECISA DISSO:
+    const checkoutUrl = mpData.init_point || mpData.sandbox_init_point;
+
+    // =========================
+    // 6) RESPONDE PRO FRONT
+    // =========================
     return NextResponse.json({
-      checkout_url: checkoutUrl,
+      ok: true,
       order_id: order.id,
+      checkout_url: checkoutUrl,
     });
   } catch (e: any) {
-    return jsonError(500, "Erro interno", e?.message ?? String(e));
+    return jsonError(500, "Erro inesperado ao criar checkout.", e?.message ?? String(e));
   }
 }
