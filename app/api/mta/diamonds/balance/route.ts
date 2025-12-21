@@ -9,6 +9,27 @@ function requireEnv(name: string) {
   return v;
 }
 
+async function readBody(req: Request): Promise<{ account?: unknown }> {
+  const ct = req.headers.get("content-type") || "";
+
+  // JSON
+  if (ct.includes("application/json")) {
+    const j = await req.json().catch(() => null);
+    return (j && typeof j === "object") ? (j as any) : {};
+  }
+
+  // Form
+  if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+    const fd = await req.formData().catch(() => null);
+    if (!fd) return {};
+    return { account: fd.get("account") };
+  }
+
+  // fallback: tenta JSON mesmo assim
+  const j = await req.json().catch(() => null);
+  return (j && typeof j === "object") ? (j as any) : {};
+}
+
 export async function POST(req: Request) {
   try {
     const secret = req.headers.get("x-prizma-secret");
@@ -16,11 +37,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => null);
-    const account = body?.account;
+    const body = await readBody(req);
 
-    if (!account || typeof account !== "string") {
-      return NextResponse.json({ ok: false, error: "invalid_account" }, { status: 400 });
+    // aceita account como string ou como algo convertível
+    const accountRaw = body?.account;
+    const account =
+      typeof accountRaw === "string"
+        ? accountRaw.trim()
+        : (accountRaw != null ? String(accountRaw).trim() : "");
+
+    if (!account) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_account", received: accountRaw ?? null },
+        { status: 400 }
+      );
     }
 
     const supabase = createClient(
@@ -29,9 +59,8 @@ export async function POST(req: Request) {
       { auth: { persistSession: false } }
     );
 
-    // Usa users.username (você disse que existe)
     const { data: user, error } = await supabase
-      .from("user")
+      .from("users")
       .select("id, username, diamonds")
       .eq("username", account)
       .single();
@@ -44,7 +73,10 @@ export async function POST(req: Request) {
       { ok: true, diamonds: user.diamonds ?? 0 },
       { headers: { "Cache-Control": "no-store" } }
     );
-  } catch {
-    return NextResponse.json({ ok: false, error: "internal_error" }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: "internal_error" },
+      { status: 500 }
+    );
   }
 }
