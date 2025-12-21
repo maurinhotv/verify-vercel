@@ -17,17 +17,21 @@ const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!;
  * Pra não ficar 405 no log, devolve 200.
  */
 export async function GET() {
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(
+    { ok: true },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }
 
 export async function POST(req: Request) {
   try {
     if (!MP_ACCESS_TOKEN) {
-      return NextResponse.json({ error: "MP token missing" }, { status: 500 });
+      return NextResponse.json(
+        { error: "MP token missing" },
+        { status: 500, headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // MP manda JSON tipo:
-    // { "action": "payment.updated", "api_version": "v1", "data": { "id": "123" }, "type": "payment" }
     const body = await req.json().catch(() => null);
 
     const paymentId =
@@ -37,78 +41,81 @@ export async function POST(req: Request) {
       null;
 
     if (!paymentId) {
-      // Sem id, não tem o que fazer (mas responde 200 pro MP não ficar reenviando loucamente)
-      return NextResponse.json({ ok: true, ignored: "no_payment_id" });
+      return NextResponse.json(
+        { ok: true, ignored: "no_payment_id" },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // ✅ Busca os detalhes reais do pagamento
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    // 🔎 Busca pagamento real no MP
+    const mpRes = await fetch(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!mpRes.ok) {
       const t = await mpRes.text();
-      // responde 200 pro MP não “martelar”, mas loga como erro no seu endpoint (vai aparecer na Vercel)
-      return NextResponse.json({ ok: true, mp_fetch_failed: true, details: t });
+      return NextResponse.json(
+        { ok: true, mp_fetch_failed: true },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     const payment = await mpRes.json();
 
-    // Só entrega se estiver aprovado
-    const status = String(payment?.status || "");
-    if (status !== "approved") {
-      return NextResponse.json({ ok: true, not_approved: status });
+    if (String(payment?.status) !== "approved") {
+      return NextResponse.json(
+        { ok: true, not_approved: payment?.status },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // Você setou external_reference = order.id no create
     const externalReference = String(payment?.external_reference || "");
     if (!externalReference) {
-      return NextResponse.json({ ok: true, ignored: "no_external_reference" });
+      return NextResponse.json(
+        { ok: true, ignored: "no_external_reference" },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // ✅ 1) Pega o pedido no seu banco
-    const { data: order, error: orderErr } = await supabaseAdmin
+    // ✅ Pedido
+    const { data: order } = await supabaseAdmin
       .from("pix_orders")
-      .select("id, user_id, package_id, delivered_at, status")
+      .select("id, user_id, package_id, delivered_at")
       .eq("id", externalReference)
       .single();
 
-    if (orderErr || !order) {
-      return NextResponse.json({ ok: true, ignored: "order_not_found" });
+    if (!order || order.delivered_at) {
+      return NextResponse.json(
+        { ok: true, already_delivered: true },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // ✅ Idempotência: se já entregou, NÃO entrega de novo
-    if (order.delivered_at) {
-      return NextResponse.json({ ok: true, already_delivered: true });
-    }
-
-    // ✅ 2) Pega quantos diamantes esse pacote dá
-    const { data: pkg, error: pkgErr } = await supabaseAdmin
+    // ✅ Pacote
+    const { data: pkg } = await supabaseAdmin
       .from("diamond_packages")
-      .select("id, diamonds")
+      .select("diamonds")
       .eq("id", order.package_id)
       .single();
 
-    if (pkgErr || !pkg) {
-      return NextResponse.json({ ok: true, ignored: "package_not_found" });
-    }
-
-    const diamondsToAdd = Number(pkg.diamonds) || 0;
+    const diamondsToAdd = Number(pkg?.diamonds) || 0;
     if (diamondsToAdd <= 0) {
-      return NextResponse.json({ ok: true, ignored: "invalid_diamonds" });
+      return NextResponse.json(
+        { ok: true, ignored: "invalid_diamonds" },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    /**
-     * ✅ Parte mais importante:
-     * Primeiro “marca como entregue” somente se delivered_at ainda é null.
-     * Se duas notificações chegarem juntas, só 1 vai conseguir atualizar.
-     */
-    const { data: deliveredRow, error: deliverErr } = await supabaseAdmin
+    // 🔒 Trava idempotente
+    const { data: deliveredRow } = await supabaseAdmin
       .from("pix_orders")
       .update({
         status: "delivered",
@@ -118,45 +125,56 @@ export async function POST(req: Request) {
       })
       .eq("id", order.id)
       .is("delivered_at", null)
-      .select("id, user_id")
+      .select("user_id")
       .single();
 
-    if (deliverErr || !deliveredRow) {
-      // Se não atualizou, provavelmente outra requisição já entregou (idempotência)
-      return NextResponse.json({ ok: true, already_delivered_race: true });
+    if (!deliveredRow) {
+      return NextResponse.json(
+        { ok: true, already_delivered_race: true },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
-    // ✅ 3) Agora soma os diamantes no usuário
-    // ATENÇÃO: aqui eu estou assumindo que sua tabela users tem uma coluna "diamonds"
-    // Se o nome for outro, troque aqui.
-    const { data: userRow, error: userErr } = await supabaseAdmin
-      .from("users")
-      .select("id, diamonds")
-      .eq("id", deliveredRow.user_id)
-      .single();
+    // 💎 Soma de diamonds com proteção simples contra race
+    for (let i = 0; i < 2; i++) {
+      const { data: user } = await supabaseAdmin
+        .from("users")
+        .select("id, diamonds")
+        .eq("id", deliveredRow.user_id)
+        .single();
 
-    if (userErr || !userRow) {
-      // Pedido ficou marcado como entregue, mas usuário não encontrado
-      // (se isso acontecer, você precisa ajustar user_id no create)
-      return NextResponse.json({ ok: true, delivered_but_user_missing: true });
+      if (!user) break;
+
+      const current = Number(user.diamonds) || 0;
+      const next = current + diamondsToAdd;
+
+      const { data: updated } = await supabaseAdmin
+        .from("users")
+        .update({ diamonds: next })
+        .eq("id", user.id)
+        .eq("diamonds", current)
+        .select("id")
+        .single();
+
+      if (updated) {
+        return NextResponse.json(
+          { ok: true, delivered: true, added: diamondsToAdd, newBalance: next },
+          { headers: { "Cache-Control": "no-store" } }
+        );
+      }
     }
 
-    const current = Number(userRow.diamonds) || 0;
-    const next = current + diamondsToAdd;
-
-    const { error: updErr } = await supabaseAdmin
-      .from("users")
-      .update({ diamonds: next })
-      .eq("id", userRow.id);
-
-    if (updErr) {
-      // Ainda assim responde ok pro MP, mas você vai ver no log
-      return NextResponse.json({ ok: true, delivered_but_update_failed: true });
-    }
-
-    return NextResponse.json({ ok: true, delivered: true, added: diamondsToAdd, newBalance: next });
+    return NextResponse.json(
+      { ok: true, delivered_but_update_failed: true },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (e: any) {
-    // responde 200 pra não ficar reenvio infinito do MP, mas informa no body
-    return NextResponse.json({ ok: true, error: "webhook_exception", details: String(e?.message || e) });
+    const isProd = process.env.NODE_ENV === "production";
+    return NextResponse.json(
+      isProd
+        ? { ok: true, error: "webhook_exception" }
+        : { ok: true, error: "webhook_exception", details: String(e?.message || e) },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
 }

@@ -9,9 +9,14 @@ type Body = {
 };
 
 function jsonError(status: number, error: string, details?: unknown) {
+  const isProd = process.env.NODE_ENV === "production";
+
   return NextResponse.json(
-    { error, ...(details ? { details } : {}) },
-    { status }
+    {
+      error,
+      ...(details && !isProd ? { details } : {}),
+    },
+    { status, headers: { "Cache-Control": "no-store" } }
   );
 }
 
@@ -50,10 +55,7 @@ export async function POST(req: Request) {
     // 2) SUPABASE ADMIN (service role)
     // =========================
     const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-    const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SERVICE_ROLE_KEY; // (mantém, caso você troque o nome depois)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // (mudança mínima: remove redundância)
 
     if (!serviceRoleKey) {
       return jsonError(
@@ -71,7 +73,7 @@ export async function POST(req: Request) {
     // =========================
     const { data: sessionRow, error: sessionErr } = await supabaseAdmin
       .from("sessions")
-      .select("user_id, token")
+      .select("user_id")
       .eq("token", sessionToken)
       .single();
 
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // 4) Busca usuário (SEM mta_account)
+    // 4) Busca usuário
     // =========================
     const { data: user, error: userErr } = await supabaseAdmin
       .from("users")
@@ -117,7 +119,7 @@ export async function POST(req: Request) {
       .from("pix_orders")
       .insert({
         user_id: user.id,
-        mta_account: user.username, // sua tabela pix_orders tem mta_account (pelo print)
+        mta_account: user.username, // mantém como está (você disse que existe)
         package_id: pack.id,
         status: "pending",
       })
@@ -134,7 +136,6 @@ export async function POST(req: Request) {
     const mpAccessToken = requireEnv("MP_ACCESS_TOKEN");
     const appUrl = requireEnv("APP_URL").replace(/\/$/, "");
 
-    // webhook (se você já tem /api/pix/webhook)
     const notificationUrl = `${appUrl}/api/pix/webhook`;
 
     const preferencePayload = {
@@ -154,22 +155,24 @@ export async function POST(req: Request) {
       },
       auto_return: "approved",
       notification_url: notificationUrl,
-      statement_descriptor: "PRIZMA", // opcional (se sua conta permitir)
+      statement_descriptor: "PRIZMA",
     };
 
-    const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${mpAccessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(preferencePayload),
-    });
+    const mpRes = await fetch(
+      "https://api.mercadopago.com/checkout/preferences",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${mpAccessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(preferencePayload),
+      }
+    );
 
     const mpData: any = await mpRes.json().catch(() => null);
 
     if (!mpRes.ok || !mpData?.id || !mpData?.init_point) {
-      // marca erro no pedido
       await supabaseAdmin
         .from("pix_orders")
         .update({ status: "error" })
@@ -194,12 +197,15 @@ export async function POST(req: Request) {
       .eq("id", order.id);
 
     // =========================
-    // 9) Retorno para o front (obrigatório checkout_url)
+    // 9) Retorno para o front
     // =========================
-    return NextResponse.json({
-      checkout_url: mpData.init_point,
-      order_id: order.id,
-    });
+    return NextResponse.json(
+      {
+        checkout_url: mpData.init_point,
+        order_id: order.id,
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (e: any) {
     return jsonError(500, "Erro interno.", e?.message || String(e));
   }
