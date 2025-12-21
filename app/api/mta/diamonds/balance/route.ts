@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // Usa users.username (você disse que existe)
     const { data: user, error } = await supabase
-      .from("users")
+      .from("user")
       .select("id, username, diamonds")
       .eq("username", account)
       .single();
