@@ -17,10 +17,10 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => null);
-    const user_id = body?.user_id;
+    const account = body?.account;
 
-    if (!user_id || typeof user_id !== "string") {
-      return NextResponse.json({ ok: false, error: "invalid_user_id" }, { status: 400 });
+    if (!account || typeof account !== "string") {
+      return NextResponse.json({ ok: false, error: "invalid_account" }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -29,17 +29,21 @@ export async function POST(req: Request) {
       { auth: { persistSession: false } }
     );
 
+    // Usa users.username (você disse que existe)
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, diamonds")
-      .eq("id", user_id)
+      .select("id, username, diamonds")
+      .eq("username", account)
       .single();
 
     if (error || !user) {
       return NextResponse.json({ ok: false, error: "user_not_found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, diamonds: user.diamonds ?? 0 }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { ok: true, diamonds: user.diamonds ?? 0 },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch {
     return NextResponse.json({ ok: false, error: "internal_error" }, { status: 500 });
   }
