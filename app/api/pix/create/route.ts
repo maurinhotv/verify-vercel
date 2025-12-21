@@ -1,189 +1,107 @@
-// app/api/pix/webhook/route.ts
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
-
-type MPWebhookBody = {
-  type?: string; // ex: "payment"
-  action?: string; // ex: "payment.updated"
-  data?: { id?: string | number };
-  id?: string | number; // às vezes vem assim
+type CreateBody = {
+  packageId: number;
 };
 
-function jsonOk(extra: Record<string, any> = {}) {
-  return NextResponse.json({ ok: true, ...extra }, { status: 200 });
+// Pacotes (iguais aos do layout)
+const PACKAGES: Record<number, { diamonds: number; price: number }> = {
+  1: { diamonds: 290, price: 69 },
+  2: { diamonds: 575, price: 129 },
+  3: { diamonds: 1000, price: 255 },
+};
+
+function jsonError(status: number, message: string, extra?: any) {
+  return NextResponse.json(
+    { error: message, ...(extra ? { extra } : {}) },
+    { status }
+  );
 }
 
-/**
- * Entrega diamantes via sua API do MTA (server-to-server).
- * Ajuste o payload/header se a sua API esperar outro formato.
- */
-async function deliverDiamondsToMTA(params: {
-  mtaAccount: string;
-  diamonds: number;
-  orderId: string;
-}) {
-  const url = process.env.MTA_API_URL?.trim();
-  const secret = process.env.MTA_API_SECRET?.trim();
-
-  if (!url || !secret) {
-    throw new Error("MTA_API_URL ou MTA_API_SECRET não definido");
-  }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${secret}`,
-    },
-    body: JSON.stringify({
-      account: params.mtaAccount,
-      diamonds: params.diamonds,
-      order_id: params.orderId,
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`MTA erro ${res.status}: ${t}`);
-  }
-
-  return true;
-}
-
-async function fetchMpPayment(paymentId: string) {
-  const token = process.env.MP_ACCESS_TOKEN?.trim();
-  if (!token) throw new Error("MP_ACCESS_TOKEN não definido");
-
-  const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
-
-  const json = await res.json().catch(() => ({} as any));
-  if (!res.ok) {
-    throw new Error(`MP fetch payment falhou: ${res.status} ${JSON.stringify(json)}`);
-  }
-  return json as any;
-}
-
-// Mercado Pago às vezes testa com GET ou você pode abrir no navegador.
-// Não pode dar 405.
-export async function GET() {
-  return jsonOk({ note: "webhook online" });
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as MPWebhookBody;
-
-    // tenta pegar id do pagamento de vários jeitos
-    const paymentIdRaw = body?.data?.id ?? body?.id;
-    const paymentId = paymentIdRaw ? String(paymentIdRaw) : "";
-
-    if (!paymentId) {
-      // responde 200 pra evitar retry infinito, mas loga no banco se quiser
-      return jsonOk({ ignored: true, reason: "sem payment id" });
+    // ✅ auth (seu front já trata 401 abrindo modal)
+    const sessionToken = cookies().get("session_token")?.value;
+    if (!sessionToken) {
+      return jsonError(401, "Não autenticado.");
     }
 
-    // 1) Confirma no MP (NUNCA confiar só no webhook)
-    const payment = await fetchMpPayment(paymentId);
-
-    const status: string = payment?.status; // approved, pending, rejected...
-    const externalRef: string | null = payment?.external_reference
-      ? String(payment.external_reference)
-      : null;
-
-    // Se não tiver external_reference, não tem como achar seu pedido
-    if (!externalRef) {
-      return jsonOk({ ignored: true, reason: "sem external_reference" });
+    const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
+    if (!MP_ACCESS_TOKEN) {
+      return jsonError(500, "MP_ACCESS_TOKEN não definido.");
     }
 
-    // 2) Busca pedido
-    const { data: order, error: orderErr } = await supabaseAdmin
-      .from("pix_orders")
-      .select("id, user_id, package_id, mta_account, status, paid_at, delivered_at, gateway_id, mp_payment_id")
-      .eq("id", externalRef)
-      .single();
-
-    if (orderErr || !order?.id) {
-      return jsonOk({ ignored: true, reason: "pedido não encontrado" });
+    const APP_URL = process.env.APP_URL;
+    if (!APP_URL) {
+      return jsonError(500, "APP_URL não definido.");
     }
 
-    // 3) Atualiza status do pedido no banco (sempre)
-    // tenta gravar mp_payment_id (se a coluna existir). Se não existir, ignora.
-    await supabaseAdmin
-      .from("pix_orders")
-      .update({
-        status: status,
-        mp_payment_id: paymentId,
-        paid_at: status === "approved" ? new Date().toISOString() : order.paid_at,
-      })
-      .eq("id", order.id);
+    const body = (await req.json().catch(() => null)) as CreateBody | null;
+    const packageId = Number(body?.packageId);
 
-    // 4) Só entrega se aprovado
-    if (status !== "approved") {
-      return jsonOk({ received: true, status });
+    if (!packageId || !PACKAGES[packageId]) {
+      return jsonError(400, "packageId inválido.");
     }
 
-    // 5) Idempotência: se já entregou, não entrega de novo
-    if (order.delivered_at) {
-      return jsonOk({ received: true, status, delivered: true, dedup: true });
-    }
+    const pack = PACKAGES[packageId];
 
-    // 6) Busca pacote
-    const { data: pkg, error: pkgErr } = await supabaseAdmin
-      .from("diamond_packages")
-      .select("id, diamonds")
-      .eq("id", order.package_id)
-      .single();
+    // ✅ referência para o webhook conseguir relacionar depois
+    // (não expõe segredo, é só um identificador)
+    const external_reference = `st:${sessionToken}|pkg:${packageId}`;
 
-    if (pkgErr || !pkg?.id) {
-      // marca erro, mas responde 200 pra não virar retry infinito
-      await supabaseAdmin.from("pix_orders").update({ status: "package_not_found" }).eq("id", order.id);
-      return jsonOk({ received: true, status, delivered: false, reason: "pacote não encontrado" });
-    }
+    // ✅ cria preference (checkout)
+    const prefPayload = {
+      items: [
+        {
+          title: `${pack.diamonds} Diamantes`,
+          quantity: 1,
+          currency_id: "BRL",
+          unit_price: pack.price,
+        },
+      ],
+      external_reference,
+      // Voltar pro site depois do pagamento (você pode ajustar rotas)
+      back_urls: {
+        success: `${APP_URL}/?s=diamantes`,
+        pending: `${APP_URL}/?s=diamantes`,
+        failure: `${APP_URL}/?s=diamantes`,
+      },
+      auto_return: "approved",
+      // ✅ webhook
+      notification_url: `${APP_URL}/api/pix/webhook`,
+    };
 
-    const diamonds = Number(pkg.diamonds);
-    if (!Number.isFinite(diamonds) || diamonds <= 0) {
-      await supabaseAdmin.from("pix_orders").update({ status: "invalid_diamonds" }).eq("id", order.id);
-      return jsonOk({ received: true, status, delivered: false, reason: "diamonds inválido" });
-    }
-
-    const mtaAccount = String(order.mta_account || "").trim();
-    if (!mtaAccount) {
-      await supabaseAdmin.from("pix_orders").update({ status: "missing_mta_account" }).eq("id", order.id);
-      return jsonOk({ received: true, status, delivered: false, reason: "mta_account vazio" });
-    }
-
-    // 7) Entrega no MTA
-    await deliverDiamondsToMTA({
-      mtaAccount,
-      diamonds,
-      orderId: String(order.id),
+    const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(prefPayload),
     });
 
-    // 8) Marca como entregue (isso impede duplicar)
-    await supabaseAdmin
-      .from("pix_orders")
-      .update({
-        status: "delivered",
-        delivered_at: new Date().toISOString(),
-      })
-      .eq("id", order.id);
+    const mpData = await mpRes.json().catch(() => ({} as any));
 
-    return jsonOk({ received: true, status, delivered: true });
-  } catch (e: any) {
-    // MUITO importante: webhook não pode ficar dando 500 sempre,
-    // senão o MP vai reenviar e pode causar duplicação.
-    // Então respondemos 200 e você olha o log do erro.
-    console.error("WEBHOOK ERROR:", e?.message ?? e);
-    return jsonOk({ received: true, delivered: false, error: e?.message ?? String(e) });
+    if (!mpRes.ok) {
+      return jsonError(500, "Falha ao criar checkout no Mercado Pago.", {
+        status: mpRes.status,
+        mp: mpData,
+      });
+    }
+
+    // Mercado Pago costuma retornar init_point (produção) e sandbox_init_point
+    const checkout_url = mpData?.init_point || mpData?.sandbox_init_point;
+
+    if (!checkout_url) {
+      return jsonError(500, "Mercado Pago não retornou init_point.", { mp: mpData });
+    }
+
+    // ✅ isso aqui é o que seu front precisa
+    return NextResponse.json({ checkout_url });
+  } catch (err: any) {
+    return jsonError(500, "Erro inesperado ao criar checkout.", {
+      message: err?.message || String(err),
+    });
   }
 }
