@@ -1,4 +1,3 @@
-// app/api/pix/create/route.ts
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
@@ -22,23 +21,24 @@ function requireEnv(name: string) {
   return v;
 }
 
-function moneyFromCents(cents: number) {
-  // Mercado Pago espera number em reais (ex: 69.90)
-  return Math.round(Number(cents)) / 100;
+function toReais(priceCents: number) {
+  // Mercado Pago aceita number (ex: 69) ou decimal (ex: 69.9)
+  // Se você guarda em centavos, converte aqui.
+  return Math.round(priceCents) / 100;
 }
 
 export async function POST(req: Request) {
   try {
-    const { packageId }: Body = await req.json().catch(() => ({}));
+    const { packageId } = (await req.json().catch(() => ({}))) as Body;
 
     if (!packageId || typeof packageId !== "number") {
-      return jsonError(400, "packageId inválido");
+      return jsonError(400, "packageId inválido.");
     }
 
     // =========================
-    // 1) AUTH (cookie session_token)
+    // 1) AUTH via cookie session_token
+    // Next 15/16: cookies() é async
     // =========================
-    // Next 16: cookies() pode ser async
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session_token")?.value;
 
@@ -47,16 +47,28 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // 2) SUPABASE ADMIN
+    // 2) SUPABASE ADMIN (service role)
     // =========================
     const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-    const serviceKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY; // (mantém, caso você troque o nome depois)
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+    if (!serviceRoleKey) {
+      return jsonError(
+        500,
+        "SUPABASE_SERVICE_ROLE_KEY não definido no ambiente da Vercel."
+      );
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    // pega sessão
+    // =========================
+    // 3) Resolve sessão -> user_id
+    // =========================
     const { data: sessionRow, error: sessionErr } = await supabaseAdmin
       .from("sessions")
       .select("user_id, token")
@@ -67,7 +79,9 @@ export async function POST(req: Request) {
       return jsonError(401, "Sessão inválida.", sessionErr?.message);
     }
 
-    // pega user (não usa mta_account!)
+    // =========================
+    // 4) Busca usuário (SEM mta_account)
+    // =========================
     const { data: user, error: userErr } = await supabaseAdmin
       .from("users")
       .select("id, username")
@@ -79,35 +93,31 @@ export async function POST(req: Request) {
     }
 
     // =========================
-    // 3) BUSCA PACOTE NO BANCO
+    // 5) Busca pacote no BD (diamond_packages)
     // =========================
     const { data: pack, error: packErr } = await supabaseAdmin
       .from("diamond_packages")
       .select("id, name, diamonds, price_cents, active")
       .eq("id", packageId)
+      .eq("active", true)
       .single();
 
     if (packErr || !pack) {
       return jsonError(404, "Pacote não encontrado.", packErr?.message);
     }
 
-    if (!pack.active) {
-      return jsonError(400, "Pacote indisponível.");
-    }
-
-    const priceCents = Number(pack.price_cents) || 0;
-    if (priceCents <= 0) {
-      return jsonError(400, "Preço inválido para este pacote.");
+    if (!pack.price_cents || pack.price_cents <= 0) {
+      return jsonError(500, "Pacote com preço inválido no banco.");
     }
 
     // =========================
-    // 4) CRIA PEDIDO LOCAL (pix_orders)
+    // 6) Cria pedido local (pix_orders)
     // =========================
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("pix_orders")
       .insert({
         user_id: user.id,
-        mta_account: user.username, // mantém compatibilidade com sua tabela
+        mta_account: user.username, // sua tabela pix_orders tem mta_account (pelo print)
         package_id: pack.id,
         status: "pending",
       })
@@ -115,57 +125,51 @@ export async function POST(req: Request) {
       .single();
 
     if (orderErr || !order?.id) {
-      return jsonError(500, "Erro ao criar pedido", orderErr?.message);
+      return jsonError(500, "Erro ao criar pedido.", orderErr?.message);
     }
 
     // =========================
-    // 5) MERCADO PAGO CHECKOUT (Preference)
+    // 7) Mercado Pago Checkout (Preference)
     // =========================
-    const mpToken = requireEnv("MP_ACCESS_TOKEN");
-    const appUrl = requireEnv("APP_URL"); // ex: https://seusite.com
+    const mpAccessToken = requireEnv("MP_ACCESS_TOKEN");
+    const appUrl = requireEnv("APP_URL").replace(/\/$/, "");
 
-    // URLs de retorno (ajuste se você tiver páginas específicas)
-    const successUrl = `${appUrl}/diamantes?status=success`;
-    const failureUrl = `${appUrl}/diamantes?status=failure`;
-    const pendingUrl = `${appUrl}/diamantes?status=pending`;
-
-    // webhook (se você usa)
+    // webhook (se você já tem /api/pix/webhook)
     const notificationUrl = `${appUrl}/api/pix/webhook`;
 
-    const preferenceBody = {
-      external_reference: String(order.id),
+    const preferencePayload = {
       items: [
         {
-          id: String(pack.id),
-          title: `Diamantes - ${pack.name}`,
-          description: `${pack.diamonds} diamantes`,
+          title: `${pack.name} - ${pack.diamonds} diamantes`,
           quantity: 1,
           currency_id: "BRL",
-          unit_price: moneyFromCents(priceCents),
+          unit_price: toReais(pack.price_cents),
         },
       ],
+      external_reference: String(order.id),
       back_urls: {
-        success: successUrl,
-        failure: failureUrl,
-        pending: pendingUrl,
+        success: `${appUrl}/?payment=success`,
+        pending: `${appUrl}/?payment=pending`,
+        failure: `${appUrl}/?payment=failure`,
       },
       auto_return: "approved",
       notification_url: notificationUrl,
+      statement_descriptor: "PRIZMA", // opcional (se sua conta permitir)
     };
 
     const mpRes = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${mpToken}`,
+        Authorization: `Bearer ${mpAccessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(preferenceBody),
+      body: JSON.stringify(preferencePayload),
     });
 
-    const mpData: any = await mpRes.json().catch(() => ({}));
+    const mpData: any = await mpRes.json().catch(() => null);
 
-    if (!mpRes.ok || !mpData?.id || !(mpData?.init_point || mpData?.sandbox_init_point)) {
-      // marca pedido como erro (não quebra nada se não existir a coluna)
+    if (!mpRes.ok || !mpData?.id || !mpData?.init_point) {
+      // marca erro no pedido
       await supabaseAdmin
         .from("pix_orders")
         .update({ status: "error" })
@@ -174,29 +178,29 @@ export async function POST(req: Request) {
       return jsonError(
         502,
         "Erro ao gerar checkout no Mercado Pago.",
-        mpData
+        mpData ?? "Resposta inválida do MP"
       );
     }
 
-    // salva id da preferência no gateway_id (útil pro webhook)
+    // =========================
+    // 8) Atualiza pedido com gateway_id
+    // =========================
     await supabaseAdmin
       .from("pix_orders")
       .update({
         gateway_id: String(mpData.id),
+        status: "pending",
       })
       .eq("id", order.id);
 
-    const checkoutUrl = mpData.init_point || mpData.sandbox_init_point;
-
     // =========================
-    // 6) RESPONDE PRO FRONT
+    // 9) Retorno para o front (obrigatório checkout_url)
     // =========================
     return NextResponse.json({
-      ok: true,
+      checkout_url: mpData.init_point,
       order_id: order.id,
-      checkout_url: checkoutUrl,
     });
   } catch (e: any) {
-    return jsonError(500, "Erro inesperado ao criar checkout.", e?.message ?? String(e));
+    return jsonError(500, "Erro interno.", e?.message || String(e));
   }
 }
