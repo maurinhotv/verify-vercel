@@ -18,7 +18,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-text text-center flex-1">
-          Todos os direitos reservados © PRIZMA 2025
+          Todos os direitos reservados © PRIZMA LTDA 2025
         </div>
 
         <div className="flex items-center justify-end">

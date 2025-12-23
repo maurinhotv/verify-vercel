@@ -251,7 +251,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
         {/* LEFT */}
         <button className="site-header__logo" onClick={goHome} aria-label="Home">
           <img src="logo.svg" alt="" />
-          <span className="site-header__logoText">prizmaroleplay</span>
+          <span className="site-header__logoText">mackroleplay</span>
         </button>
 
         {/* CENTER */}
