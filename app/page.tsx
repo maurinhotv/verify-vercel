@@ -156,7 +156,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-pink-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
                 style={{
                   maskImage: 'url("/icon-instagram.svg")',
                   WebkitMaskImage: 'url("/icon-instagram.svg")',
@@ -176,7 +176,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-pink-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
                 style={{
                   maskImage: 'url("/icon-youtube.svg")',
                   WebkitMaskImage: 'url("/icon-youtube.svg")',
@@ -196,7 +196,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-pink-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
                 style={{
                   maskImage: 'url("/icon-discord.svg")',
                   WebkitMaskImage: 'url("/icon-discord.svg")',
@@ -222,7 +222,7 @@ export default function HomePage() {
               onClick={() =>
                 document.getElementById("news-slider")!.scrollBy({ left: -300, behavior: "smooth" })
               }
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-pink-600 hover:bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
             >
               ❮
             </button>
@@ -255,7 +255,7 @@ export default function HomePage() {
               onClick={() =>
                 document.getElementById("news-slider")!.scrollBy({ left: 300, behavior: "smooth" })
               }
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-pink-600 hover:bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
             >
               ❯
             </button>
