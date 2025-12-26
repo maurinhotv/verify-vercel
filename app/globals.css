@@ -5,8 +5,8 @@
 
 
 :root {
-  --green: #54D163;
-  --green: #54D163;
+  --green: #7411a1;
+  --green: #7411a1;
   --bg-dark: #0b0d0b;
   --bg-panel: #101210;
   --text-main: rgba(255,255,255,.92);
@@ -28,7 +28,7 @@ body {
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: rgba(255,255,255,.08); }
 ::-webkit-scrollbar-thumb { background: var(--green); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #54D163; }
+::-webkit-scrollbar-thumb:hover { background: #7411a1; }
 
 /* Header fixo (tamanho constante) */
 .header {
@@ -137,8 +137,8 @@ body {
   padding: 0 18px;
 }
 .hero-logo {
-  width: min(430px, 86vw);
-  margin: 0 auto 30px;
+  width: min(550px, 86vw);
+  margin: 0 auto 15px;
 }
 .hero-subtitle {
   color: rgba(255, 255, 255, 100);
@@ -157,7 +157,7 @@ body {
 }
 .btn-primary {
   background: var(--green);
-  color: #000;
+  color: #ffffff;
   font-weight: 900;
   font-size: 25px;          /* ⬅ tamanho do texto */
   padding: 11px 80px;       /* ⬅ estica o botão pros lados */
@@ -207,11 +207,12 @@ body {
 .hero-social a:hover { opacity: 1; transform: translateY(-1px); }
 
 /* Character animação slide-in */
+
 .hero-character {
   position: absolute;
-  left: 15%;                  /* ⬅ posição FINAL */
+  right: 5%;                  /* ⬅ posição FINAL */
   bottom: 0;
-  width: min(450px, 50vw);
+  width: min(800px, 50vw);
   z-index: 4;
   pointer-events: none;
 
@@ -222,6 +223,32 @@ body {
 
 
 @keyframes heroSlideIn {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+
+.hero-character2 {
+  position: absolute;
+  left: 10%;                  /* ⬅ posição FINAL */
+  bottom: 0;
+  width: min(530px, 50vw);
+  z-index: 4;
+  pointer-events: none;
+
+  opacity: 0;
+  animation: heroSlideIn2 .85s ease-out .15s forwards;
+}
+
+
+
+@keyframes heroSlideIn2 {
   from {
     transform: translateX(-120%);
     opacity: 0;
@@ -380,9 +407,9 @@ div.rounded-full > button { border-radius: 12px !important; }
   gap:10px;
   padding: 10px 14px;
   border-radius: 12px; /* rounded-lg */
-  border: 1px solid rgba(183,255,30,.70);
+  border: 1px solid rgba(116, 17, 161,.70);
   background: rgba(0,0,0,.25);
-  color: rgba(84, 209, 99,.95);
+  color: rgba(116, 17, 161,.95);
   font-weight: 900;
   letter-spacing: .2px;
   text-transform: uppercase;
@@ -743,7 +770,7 @@ div.rounded-full > button { border-radius: 12px !important; }
   letter-spacing: .2px;
   background: rgba(84, 209, 99,.95);
   color: #000;
-  border: 1px solid rgba(183,255,30,.70);
+  border: 1px solid rgba(116, 17, 161,.70);
   transition: transform .18s ease, filter .18s ease;
 }
 .panel-btn-solid:hover{
@@ -758,7 +785,7 @@ div.rounded-full > button { border-radius: 12px !important; }
   letter-spacing: .2px;
   background: rgba(0,0,0,.22);
   color: rgba(84, 209, 99,.95);
-  border: 1px solid rgba(183,255,30,.70);
+  border: 1px solid rgba(116, 17, 161,.70);
   transition: transform .18s ease, filter .18s ease, background .18s ease;
 }
 .panel-btn-outline:hover{
@@ -793,8 +820,8 @@ div.rounded-full > button { border-radius: 12px !important; }
    ========================= */
 
 :root{
-  --green: #54D163;
-  --green-2: #54D163;
+  --green: #7411a1;
+  --green-2: #7411a1;
   --header-bg: rgba(0,0,0,.45);
   --header-border: rgba(255,255,255,.10);
 }
@@ -1311,15 +1338,12 @@ div.rounded-full > button { border-radius: 12px !important; }
    ============================================================ */
 
 /* Camada de cor escura sobre a imagem (a sobreposição principal) */
-/* ============================================================
-   ✅ SOBREPOSIÇÃO DE COR, VINHETA E DESFOQUE DISTORCIDO
-   ============================================================ */
 
 .hero-overlay {
   position: absolute;
   inset: 0;
   /* Fundo semitransparente (preto com 15% de opacidade) */
-  background-color: rgba(7, 70, 4, 0.555); 
+  background-color: rgba(46, 4, 70, 0.39); 
   
   /* Desfoque (Blur) aplicado ao que está por trás deste elemento */
   backdrop-filter: blur(0.5px); 
@@ -1338,4 +1362,22 @@ div.rounded-full > button { border-radius: 12px !important; }
     rgba(0, 0, 0, 0.6) 100%
   );
   z-index: 2;
+}
+
+/* 1. Definindo a animação */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px); /* Sobe 20 pixels */
+  }
+  100% {
+    transform: translateY(0px); /* Volta para a posição original */
+  }
+}
+
+/* 2. Criando a classe que aplica a animação */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

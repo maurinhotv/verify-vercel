@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
+import Toast from "@/components/Toast";
+import Footer from "@/components/Footer";
 import { getSession, logout } from "@/lib/auth";
-import { setAvatar, getAvatar, clearAvatar } from "@/lib/avatar";
+import { setAvatar as saveAvatar, getAvatar, clearAvatar } from "@/lib/avatar";
 
 type Session = {
   ok: true;
@@ -29,6 +31,57 @@ export default function PainelPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [diamonds, setDiamonds] = useState<number>(0);
+  const [loadingPackage, setLoadingPackage] = useState<number | null>(null);
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastTitle, setToastTitle] = useState("");
+  const [toastText, setToastText] = useState("");
+  const [toastType, setToastType] = useState<"ok" | "err">("ok");
+
+  const onToast = (title: string, text: string, type: "ok" | "err" = "ok") => {
+    setToastTitle(title);
+    setToastText(text);
+    setToastType(type);
+    setToastOpen(true);
+  };
+
+  async function buyPackage(packageId: number) {
+    try {
+      setLoadingPackage(packageId);
+
+      const res = await fetch("/api/pix/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ packageId }),
+      });
+
+      if (res.status === 401) {
+        localStorage.setItem("open_login_modal", "1");
+        onToast("Faça login", "Você precisa estar logado para comprar diamantes.", "err");
+        window.location.href = "/?login=1";
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        onToast("Erro", data?.error ?? "Falha ao criar pedido", "err");
+        return;
+      }
+
+      if (data?.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+
+      onToast("Erro", "Resposta inválida do servidor (sem checkout_url).", "err");
+    } catch (e) {
+      onToast("Erro", "Falha inesperada ao iniciar o checkout", "err");
+    } finally {
+      setLoadingPackage(null);
+    }
+  }
 
   useEffect(() => {
     const s: any = getSession();
@@ -65,7 +118,7 @@ export default function PainelPage() {
 
     async function loadBalance() {
       try {
-        const res = await fetch("/user/balance", { credentials: "include" });
+        const res = await fetch("/api/user/balance", { credentials: "include" });
         if (!res.ok) return;
         const data = await res.json().catch(() => ({}));
         const value = Number(data?.diamonds ?? data?.balance ?? 0);
@@ -127,17 +180,14 @@ export default function PainelPage() {
       const dataUrl = String(reader.result || "");
       if (!dataUrl.startsWith("data:image/")) return;
 
-      setAvatar(dataUrl);
+      saveAvatar(dataUrl);
       setAvatarState(dataUrl);
       alert("Avatar atualizado!");
     };
     reader.readAsDataURL(file);
   }
 
-  function setAvatar(dataUrl: string) {
-    setAvatarState(dataUrl);
-    setAvatar(dataUrl);
-  }
+  // usa `saveAvatar` (importado) para persistir, e `setAvatarState` para estado local
 
   function removeAvatar() {
     clearAvatar();
@@ -195,10 +245,6 @@ export default function PainelPage() {
                     Remover
                   </button>
 
-                  <Link href="/" className="btn-header btn-header--ghost">
-                    Voltar
-                  </Link>
-
                   <button
                     className="btn-header btn-header--danger"
                     onClick={() => {
@@ -220,8 +266,146 @@ export default function PainelPage() {
               </div>
             </div>
           </div>
+
+          {/* DIAMANTES */}
+          <section id="diamantes" className="section ">
+            <div className="section-inner">
+              <h2 className="section-title" style={{ color: "var(--green)" }}>
+                PACOTES DE DIAMANTES
+              </h2>
+              <p className="section-subtitle">Muito mais vantagens por um pequeno valor</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 items-center">
+                <div className="card p-4">
+                  <img src="/character-diamonds.svg" alt="" className="w-full h-[320px] object-contain" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                  {/* PACOTE 1 */}
+                  <div className="card p-6">
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon /> <span className="text-lg">150</span>
+                    </div>
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 9,99</div>
+                    <button
+                      disabled={loadingPackage === 1}
+                      onClick={() => buyPackage(1)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 1 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                  {/* PACOTE 2 */}
+                  <div className="card p-6">
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon /> <span className="text-lg">260</span>
+                    </div>
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 19,99</div>
+                    <button
+                      disabled={loadingPackage === 2}
+                      onClick={() => buyPackage(2)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 2 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                  {/* PACOTE 3 */}
+                  <div className="card p-6 ring-2 ring-sky-200/40">
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon /> <span className="text-lg">450</span>
+                    </div>
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 29,99</div>
+                    <button
+                      disabled={loadingPackage === 3}
+                      onClick={() => buyPackage(3)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 3 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                  {/* PACOTE 4 — 15% BÔNUS */}
+                  <div className="card p-6 relative overflow-hidden">
+                    <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                      15% BÔNUS
+                    </div>
+
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon />
+                      <span className="text-sm line-through opacity-50">700</span>
+                      <span className="text-lg">805</span>
+                    </div>
+
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 49,99</div>
+                    <button
+                      disabled={loadingPackage === 4}
+                      onClick={() => buyPackage(4)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 4 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                  {/* PACOTE 5 — 25% BÔNUS */}
+                  <div className="card p-6 relative overflow-hidden">
+                    <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                      25% BÔNUS
+                    </div>
+
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon />
+                      <span className="text-sm line-through opacity-50">1.100</span>
+                      <span className="text-lg">1.375</span>
+                    </div>
+
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 74,99</div>
+                    <button
+                      disabled={loadingPackage === 5}
+                      onClick={() => buyPackage(5)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 5 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                  {/* PACOTE 6 — 40% BÔNUS */}
+                  <div className="card p-6 relative overflow-hidden ring-2 ring-sky-200">
+                    <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                      40% BÔNUS
+                    </div>
+
+                    <div className="flex items-center gap-2 font-extrabold text-white/90">
+                      <DiamondIcon />
+                      <span className="text-sm line-through opacity-50">1.600</span>
+                      <span className="text-lg">2.240</span>
+                    </div>
+
+                    <div className="mt-3 text-sky-200 font-black text-lg">R$ 99,99</div>
+                    <button
+                      disabled={loadingPackage === 6}
+                      onClick={() => buyPackage(6)}
+                      className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                    >
+                      {loadingPackage === 6 ? "PROCESSANDO..." : "COMPRAR"}
+                    </button>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
+    
+      <Footer />
+      <Toast open={toastOpen} title={toastTitle} text={toastText} type={toastType} onClose={() => setToastOpen(false)} />
     </>
+    
   );
 }
+

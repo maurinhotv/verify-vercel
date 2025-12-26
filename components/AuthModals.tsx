@@ -194,7 +194,7 @@ export default function AuthModals({
                       onKeyDown={(e) => e.key === "Enter" && doRegister()}
                       type="password"
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 outline-none
-                                 focus:ring-4 focus:ring-[rgba(84,209,99,18)] focus:border-[rgba(84,209,99,35)]"
+                                 focus:ring-4 focus:ring-[rgba(255,105,180,18)] focus:border-[rgba(255,105,180,35)]"
                       placeholder="Crie uma senha"
                     />
                     <div className="mt-2 text-xs text-white/60 font-semibold">Mínimo 6 caracteres.</div>

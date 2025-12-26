@@ -26,7 +26,7 @@ export default function Navbar() {
         {/* LOGO */}
         <div className="flex items-center gap-2 font-bold text-white">
           <span className="text-[var(--green)]">▮▮</span>
-          metrópole
+          borealroleplay
         </div>
 
         {/* MENU */}
