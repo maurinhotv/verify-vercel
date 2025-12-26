@@ -132,7 +132,7 @@ export default function AuthModals({
                       onChange={(e) => setLoginUser(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && doLogin()}
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 outline-none
-                                 focus:ring-4 focus:ring-[rgba(84,209,99,18)] focus:border-[rgba(84,209,99,35)]"
+                                 focus:ring-4 focus:ring-[rgba(174,102,255,18)] focus:border-[rgba(174,102,255,35)]"
                       placeholder="Seu usuário"
                       autoFocus
                     />
@@ -145,7 +145,7 @@ export default function AuthModals({
                       onKeyDown={(e) => e.key === "Enter" && doLogin()}
                       type="password"
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 outline-none
-                                 focus:ring-4 focus:ring-[rgba(84,209,99,18)] focus:border-[rgba(84,209,99,35)]"
+                                 focus:ring-4 focus:ring-[rgba(174,102,255,18)] focus:border-[rgba(174,102,255,35)]"
                       placeholder="Sua senha"
                     />
                   </Field>
@@ -166,7 +166,7 @@ export default function AuthModals({
                       type="button"
                       onClick={doLogin}
                       disabled={busyLogin}
-                      className="btn-green btn-shine flex-1 px-4 py-3 font-black uppercase text-xs disabled:opacity-60"
+                      className="btn-purple btn-shine flex-1 px-4 py-3 font-black uppercase text-xs disabled:opacity-60"
                     >
                       {busyLogin ? "Entrando..." : "Entrar"}
                     </button>
@@ -180,7 +180,7 @@ export default function AuthModals({
                       onChange={(e) => setRegUser(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && doRegister()}
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 outline-none
-                                 focus:ring-4 focus:ring-[rgba(84,209,99,18)] focus:border-[rgba(84,209,99,35)]"
+                                 focus:ring-4 focus:ring-[rgba(174,102,255,18)] focus:border-[rgba(174,102,255,35)]"
                       placeholder="Escolha um usuário"
                       autoFocus
                     />
@@ -194,7 +194,7 @@ export default function AuthModals({
                       onKeyDown={(e) => e.key === "Enter" && doRegister()}
                       type="password"
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-3 outline-none
-                                 focus:ring-4 focus:ring-[rgba(255,105,180,18)] focus:border-[rgba(255,105,180,35)]"
+                                 focus:ring-4 focus:ring-[rgba(174,102,255,18)] focus:border-[rgba(174,102,255,35)]"
                       placeholder="Crie uma senha"
                     />
                     <div className="mt-2 text-xs text-white/60 font-semibold">Mínimo 6 caracteres.</div>
@@ -216,7 +216,7 @@ export default function AuthModals({
                       type="button"
                       onClick={doRegister}
                       disabled={busyReg}
-                      className="btn-green btn-shine flex-1 px-4 py-3 font-black uppercase text-xs disabled:opacity-60"
+                      className="btn-purple btn-shine flex-1 px-4 py-3 font-black uppercase text-xs disabled:opacity-60"
                     >
                       {busyReg ? "Criando..." : "Criar"}
                     </button>

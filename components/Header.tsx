@@ -279,7 +279,7 @@ export default function Header({ onOpenLogin, onOpenRegister, onLogout }: Header
           {!user ? (
             <>
               <button className="btn-header btn-header--primary" onClick={onOpenLogin}>
-                Entrar
+                ENTRAR
               </button>
             </>
           ) : (

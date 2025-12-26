@@ -5,8 +5,8 @@
 
 
 :root {
-  --green: #7411a1;
-  --green: #7411a1;
+  --green: #ae66ff;
+  --green: #ae66ff;
   --bg-dark: #0b0d0b;
   --bg-panel: #101210;
   --text-main: rgba(255,255,255,.92);
@@ -28,7 +28,7 @@ body {
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: rgba(255,255,255,.08); }
 ::-webkit-scrollbar-thumb { background: var(--green); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #7411a1; }
+::-webkit-scrollbar-thumb:hover { background: #ae66ff; }
 
 /* Header fixo (tamanho constante) */
 .header {
@@ -157,8 +157,8 @@ body {
 }
 .btn-primary {
   background: var(--green);
-  color: #ffffff;
-  font-weight: 900;
+  color: #000000;
+  font-weight: 650;
   font-size: 25px;          /* ⬅ tamanho do texto */
   padding: 11px 80px;       /* ⬅ estica o botão pros lados */
   border-radius: 12px;      /* rounded-lg */
@@ -305,12 +305,12 @@ body {
 }
 /* Cards */
 .card {
-  background: rgba(40, 66, 64,.06);
+  background: rgba(63, 94, 95, 0.407);
   border: 1px solid rgba(255,255,255,.12); /* Mantém a borda branca */
   border-radius: 18px;
   backdrop-filter: blur(10px);
   /* Adiciona o contorno azul por fora */
-  outline: 2px solid #77E4FB; 
+  outline: 2px solid #12dbff; 
   /* Adiciona 'outline-color' à transição para um efeito suave */
   transition: transform .25s ease, box-shadow .25s ease, outline-color .25s ease;
 }
@@ -337,8 +337,8 @@ body {
   width: 18px;         /* base */
   height: 3px;
   border-radius: 999px;
-  background: rgba(125, 232, 255, .75);
-  box-shadow: 0 0 14px rgba(125, 232, 255, .35);
+  background: rgba(18, 219, 255, .75);
+  box-shadow: 0 0 14px rgba(18, 219, 255, .35);
 }
 
 /* Footer */
@@ -407,9 +407,9 @@ div.rounded-full > button { border-radius: 12px !important; }
   gap:10px;
   padding: 10px 14px;
   border-radius: 12px; /* rounded-lg */
-  border: 1px solid rgba(116, 17, 161,.70);
+  border: 1px solid rgba(174, 102, 255,.70);
   background: rgba(0,0,0,.25);
-  color: rgba(116, 17, 161,.95);
+  color: rgba(174, 102, 255,.95);
   font-weight: 900;
   letter-spacing: .2px;
   text-transform: uppercase;
@@ -546,9 +546,9 @@ div.rounded-full > button { border-radius: 12px !important; }
   padding: 7px 12px;        /* ⬅ menor */
   height: 32px;             /* ⬅ controla a base */
   border-radius: 12px;      /* rounded-lg */
-  border: 1px solid rgba(84, 209, 99,.95);
+  border: 1px solid rgba(174, 102, 255,.95);
   background: rgba(0,0,0,.22);
-  color: rgba(84, 209, 99,.95);
+  color: rgba(174, 102, 255,.95);
   font-weight: 800;         /* ⬅ um pouco menos pesado */
   font-size: 12px;          /* ⬅ menor */
   letter-spacing: .15px;
@@ -744,8 +744,8 @@ div.rounded-full > button { border-radius: 12px !important; }
 }
 
 .panel-diamond-ic{
-  color: rgba(125,232,255,.95);
-  filter: drop-shadow(0 0 10px rgba(125,232,255,.30));
+  color: rgba(18, 219, 255,.95);
+  filter: drop-shadow(0 0 10px rgba(18, 219, 255,.30));
   font-weight: 900;
   transform: translateY(-1px);
 }
@@ -768,9 +768,9 @@ div.rounded-full > button { border-radius: 12px !important; }
   padding: 12px 18px;
   font-weight: 1000;
   letter-spacing: .2px;
-  background: rgba(84, 209, 99,.95);
+  background: rgba(174, 102, 255,.95);
   color: #000;
-  border: 1px solid rgba(116, 17, 161,.70);
+  border: 1px solid rgba(174, 102, 255,.70);
   transition: transform .18s ease, filter .18s ease;
 }
 .panel-btn-solid:hover{
@@ -784,8 +784,8 @@ div.rounded-full > button { border-radius: 12px !important; }
   font-weight: 1000;
   letter-spacing: .2px;
   background: rgba(0,0,0,.22);
-  color: rgba(84, 209, 99,.95);
-  border: 1px solid rgba(116, 17, 161,.70);
+  color: rgba(174, 102, 255,.95);
+  border: 1px solid rgba(174, 102, 255,.70);
   transition: transform .18s ease, filter .18s ease, background .18s ease;
 }
 .panel-btn-outline:hover{
@@ -820,8 +820,8 @@ div.rounded-full > button { border-radius: 12px !important; }
    ========================= */
 
 :root{
-  --green: #7411a1;
-  --green-2: #7411a1;
+  --green: #ae66ff;
+  --green-2: #ae66ff;
   --header-bg: rgba(0,0,0,.45);
   --header-border: rgba(255,255,255,.10);
 }
@@ -927,14 +927,22 @@ div.rounded-full > button { border-radius: 12px !important; }
 }
 
 /* Botões (rounded-lg) */
-.btn-header{
+.btn-header {
   height: 40px;
-  padding: 0 16px;
-  border-radius: 12px; /* rounded-lg */
-  font-weight: 900;
+  /* Aumentei de 16px para 32px ou 40px para expandir pros lados */
+  padding: 0 32px; 
+  
+  border-radius: 20px;
+  font-weight: 750; /* Fonte mais fina como você queria */
+  font-size: 16px;
   letter-spacing: .02em;
-  font-size: 14px;
   cursor: pointer;
+  
+  /* Garante que o conteúdo fique centralizado ao expandir */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
   transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
 }
 
@@ -1343,7 +1351,7 @@ div.rounded-full > button { border-radius: 12px !important; }
   position: absolute;
   inset: 0;
   /* Fundo semitransparente (preto com 15% de opacidade) */
-  background-color: rgba(46, 4, 70, 0.39); 
+  background-color: rgba(50, 7, 74, 0.511); 
   
   /* Desfoque (Blur) aplicado ao que está por trás deste elemento */
   backdrop-filter: blur(0.5px); 

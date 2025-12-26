@@ -156,7 +156,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-purple-500"
                 style={{
                   maskImage: 'url("/icon-instagram.svg")',
                   WebkitMaskImage: 'url("/icon-instagram.svg")',
@@ -176,7 +176,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-purple-500"
                 style={{
                   maskImage: 'url("/icon-youtube.svg")',
                   WebkitMaskImage: 'url("/icon-youtube.svg")',
@@ -196,7 +196,7 @@ export default function HomePage() {
               className="group"
             >
               <div
-                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-green-500"
+                className="h-5 w-5 bg-white transition-colors duration-300 group-hover:bg-purple-500"
                 style={{
                   maskImage: 'url("/icon-discord.svg")',
                   WebkitMaskImage: 'url("/icon-discord.svg")',
@@ -222,7 +222,7 @@ export default function HomePage() {
               onClick={() =>
                 document.getElementById("news-slider")!.scrollBy({ left: -300, behavior: "smooth" })
               }
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-purple-600 hover:bg-purple-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
             >
               ❮
             </button>
@@ -236,7 +236,6 @@ export default function HomePage() {
                 { img: "/pathnotes1.svg", date: "17.12.25" },
                 { img: "/pathnotes2.svg", date: "10.12.25" },
                 { img: "/pathnotes3.svg", date: "26.11.25" },
-                { img: "/pathnotes4.svg", date: "20.11.25" },
               ].map((p, idx) => (
                 <div key={idx} className="cardpath p-5 min-w-[300px] md:min-w-[calc(33.333%-16px)] snap-start">
                   <div className="flex items-center justify-between mb-4">
@@ -255,7 +254,7 @@ export default function HomePage() {
               onClick={() =>
                 document.getElementById("news-slider")!.scrollBy({ left: 300, behavior: "smooth" })
               }
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-green-600 hover:bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-purple-600 hover:bg-purple-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
             >
               ❯
             </button>
@@ -266,7 +265,7 @@ export default function HomePage() {
       {/* DIAMANTES */}
       <section id="diamantes" className="section section-diamonds ">
         <div className="section-inner">
-          <h2 className="section-title" style={{ color: "var(--green)" }}>
+          <h2 className="section-title" style={{ color: "var(--purple)" }}>
             PACOTES DE DIAMANTES
           </h2>
           <p className="section-subtitle">Muito mais vantagens por um pequeno valor</p>
@@ -283,11 +282,11 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 font-extrabold text-white/90">
                   <DiamondIcon /> <span className="text-lg">150</span>
                 </div>
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 9,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 9,99</div>
                 <button
                   disabled={loadingPackage === 1}
                   onClick={() => buyPackage(1)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 1 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
@@ -298,26 +297,26 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 font-extrabold text-white/90">
                   <DiamondIcon /> <span className="text-lg">260</span>
                 </div>
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 19,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 19,99</div>
                 <button
                   disabled={loadingPackage === 2}
                   onClick={() => buyPackage(2)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 2 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
               </div>
 
               {/* PACOTE 3 */}
-              <div className="card p-6 ring-2 ring-sky-200/40">
+              <div className="card p-6">
                 <div className="flex items-center gap-2 font-extrabold text-white/90">
                   <DiamondIcon /> <span className="text-lg">450</span>
                 </div>
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 29,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 29,99</div>
                 <button
                   disabled={loadingPackage === 3}
                   onClick={() => buyPackage(3)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 3 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
@@ -325,7 +324,7 @@ export default function HomePage() {
 
               {/* PACOTE 4 — 15% BÔNUS */}
               <div className="card p-6 relative overflow-hidden">
-                <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                <div className="absolute top-3 left-3 bg-sky-300 text-black text-xs font-black px-3 py-1 rounded-full">
                   15% BÔNUS
                 </div>
 
@@ -335,11 +334,11 @@ export default function HomePage() {
                   <span className="text-lg">805</span>
                 </div>
 
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 49,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 49,99</div>
                 <button
                   disabled={loadingPackage === 4}
                   onClick={() => buyPackage(4)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 4 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
@@ -347,7 +346,7 @@ export default function HomePage() {
 
               {/* PACOTE 5 — 25% BÔNUS */}
               <div className="card p-6 relative overflow-hidden">
-                <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                <div className="absolute top-3 left-3 bg-sky-300 text-black text-xs font-black px-3 py-1 rounded-full">
                   25% BÔNUS
                 </div>
 
@@ -357,11 +356,11 @@ export default function HomePage() {
                   <span className="text-lg">1.375</span>
                 </div>
 
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 74,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 74,99</div>
                 <button
                   disabled={loadingPackage === 5}
                   onClick={() => buyPackage(5)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 5 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
@@ -369,7 +368,7 @@ export default function HomePage() {
 
               {/* PACOTE 6 — 40% BÔNUS */}
               <div className="card p-6 relative overflow-hidden ring-2 ring-sky-200">
-                <div className="absolute top-3 left-3 bg-sky-200 text-black text-xs font-black px-3 py-1 rounded-full">
+                <div className="absolute top-3 left-3 bg-sky-300 text-black text-xs font-black px-3 py-1 rounded-full">
                   40% BÔNUS
                 </div>
 
@@ -379,11 +378,11 @@ export default function HomePage() {
                   <span className="text-lg">2.240</span>
                 </div>
 
-                <div className="mt-3 text-sky-200 font-black text-lg">R$ 99,99</div>
+                <div className="mt-3 text-sky-100 font-black text-lg">R$ 99,99</div>
                 <button
                   disabled={loadingPackage === 6}
                   onClick={() => buyPackage(6)}
-                  className="mt-5 w-full rounded-xl bg-sky-200 text-black font-black py-3 disabled:opacity-60"
+                  className="mt-5 w-full rounded-xl bg-sky-300 text-black font-black py-3 disabled:opacity-60"
                 >
                   {loadingPackage === 6 ? "PROCESSANDO..." : "COMPRAR"}
                 </button>
