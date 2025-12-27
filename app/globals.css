@@ -1035,8 +1035,8 @@ div.rounded-full > button { border-radius: 12px !important; }
   padding: 0 14px;
   border-radius: 12px;
   background: rgba(0,0,0,.35);
-  border: 1px solid rgba(174, 255, 0, .55);
-  color: rgb(174, 255, 0);
+  border: 1px solid rgba(174, 102, 255, .55);
+  color: rgb(174, 102, 255);
   font-weight: 900;
   letter-spacing: .02em;
   font-size: 12px;
