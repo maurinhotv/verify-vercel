@@ -5,8 +5,8 @@
 
 
 :root {
-  --green: #ae66ff;
-  --green: #ae66ff;
+  --purple: #ae66ff;
+  --purple-2: #ae66ff;
   --bg-dark: #0b0d0b;
   --bg-panel: #101210;
   --text-main: rgba(255,255,255,.92);
@@ -24,10 +24,10 @@ body {
 }
 
 /* Scrollbar rosa */
-* { scrollbar-width: thin; scrollbar-color: var(--green) rgba(255,255,255,.10); }
+* { scrollbar-width: thin; scrollbar-color: var(--purple) rgba(255,255,255,.10); }
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: rgba(255,255,255,.08); }
-::-webkit-scrollbar-thumb { background: var(--green); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #ae66ff; }
 
 /* Header fixo (tamanho constante) */
@@ -61,7 +61,7 @@ body {
   opacity: .9;
 }
 .nav-link:hover { opacity: 1; color: #fff; }
-.nav-link.active { color: var(--green); opacity: 1; }
+.nav-link.active { color: var(--purple); opacity: 1; }
 
 /* Pills topo */
 .pill {
@@ -156,7 +156,7 @@ body {
   flex-wrap: wrap;
 }
 .btn-primary {
-  background: var(--green);
+  background: var(--purple);
   color: #000000;
   font-weight: 650;
   font-size: 25px;          /* ⬅ tamanho do texto */
@@ -284,7 +284,7 @@ body {
   font-size: clamp(34px, 4vw, 54px);
   font-weight: 1000;
   text-align: center;
-  color: var(--green);
+  color: var(--purple);
   letter-spacing: .6px;
 }
 .section-subtitle {
@@ -820,8 +820,8 @@ div.rounded-full > button { border-radius: 12px !important; }
    ========================= */
 
 :root{
-  --green: #ae66ff;
-  --green-2: #ae66ff;
+  --purple: #ae66ff;
+  --purple-2: #ae66ff;
   --header-bg: rgba(0,0,0,.45);
   --header-border: rgba(255,255,255,.10);
 }
@@ -873,7 +873,7 @@ div.rounded-full > button { border-radius: 12px !important; }
   width: 16px;
   height: 16px;
   border-radius: 6px;
-  background: var(--green);
+  background: var(--purple);
   box-shadow: 0 0 0 2px rgba(255, 102, 196, .25);
 }
 
@@ -913,7 +913,7 @@ div.rounded-full > button { border-radius: 12px !important; }
 
 /* Efeito de ativo: Fica rosa */
 .site-header__navLink.active {
-  color: var(--green);
+  color: var(--purple);
 }
 
 
@@ -951,13 +951,13 @@ div.rounded-full > button { border-radius: 12px !important; }
 }
 
 .btn-header--primary{
-  background: var(--green);
+  background: var(--purple);
   border: 1px solid rgba(255,255,255,.15);
   color: #0b0b0b;
 }
 
 .btn-header--primary:hover{
-  background: var(--green-2);
+  background: var(--purple-2);
 }
 
 .btn-header--ghost{
@@ -1194,8 +1194,8 @@ div.rounded-full > button { border-radius: 12px !important; }
   padding: 0 14px;
   border-radius: 12px;
   background: rgba(0,0,0,.35);
-  border: 1px solid rgba(84, 209, 99,.95);
-  color: rgb(84, 209, 99,.95);
+  border: 1px solid rgba(174, 102, 255,.95);
+  color: rgb(174, 102, 255,.95);
   font-weight: 900;
   letter-spacing: .02em;
   font-size: 12px;
